@@ -20,7 +20,7 @@
 " ---------
 " :ZQEcho Hello World! You can use any Unicode glyph without quoting: „≈ß•°×∞”
 " :2ZQEcho Prepend with a count ↔ a message log-level AND also a distinct color,
-" :ZQEcho %1Red %2Green %3Yellow %4Blue %5Magenta %6Cyan %7White %8Black %0Error
+" :ZQEcho %1Red %2Green %3Yellow %4Blue %5Magenta %6Cyan %7White %0Error
 " :ZQEcho Above is the short-color format. The long one allows to specify any
 "       \ hl-group: %Identifier.Hello world!
 " :ZQEcho Provided are color-named hl-groups, like: %gold. %lblue. etc.
@@ -81,7 +81,7 @@ let g:zq_messages = []
 
 " Session-variables initialization.
 let s:ZeroQuote_Messages_state = 0
-let [ s:ZeroQuote_ZQEcho, s:ZeroQuote_ZQEcho_idx ] = [ [], -1 ]
+let s:ZeroQuote_deferredMessageQueue = []
 let s:ZeroQuote_timers = []
 
 """""""""""""""""" THE END OF THE SCRIPT BODY }}}
@@ -155,7 +155,7 @@ function! s:ZeroQuote_ZQEcho(hl, ...)
     endif
 
     " Finally: detect %…. infixes, select color, output the message bit by bit.
-    let c = ["Error", "WarningMsg", "gold", "green4", "blue", "None"]
+    let c = ["Error", "red", "green4", "gold", "blue2", "magenta", "cyan", "white", "None", "bluemsg"]
     let [pause,new_msg_pre,new_msg_post] = s:ZeroQuote_GetPrefixValue('p%[ause]', join(args) )
     let msg = new_msg_pre . new_msg_post
 
@@ -225,49 +225,52 @@ endfunc
 function! s:ZeroQuote_ZQEchoCmdImpl(hl, bang, linenum, ...)
     if(!empty(a:bang))
         call s:ZeroQuote_DeployDeferred_TimerTriggered_Message(
-                    \ { 'm': (a:hl < 7 ? extend(["[".a:linenum."]"], a:000[0]) : a:000[0]) }, 'm', 1)
+                    \ (a:hl < 7 ? extend(["[".a:linenum."]"], a:000[0]) : a:000[0]), 0)
     else
-        if exists("a:000[0][1]") && type(a:000[0][1]) == 1 && a:000[0][1] =~ '\v^\[\d+\]$'
+        " Prepend the debug- [line-number] space-separated word if needed, i.e.:
+        " if it's not a user-message (i.e.: if log-level/the-<count> < 10) AND
+        " if not already prepended (the call might be from various sources, like
+        " timeout-callback, so in general it isn't well known if the message is
+        " pre-processed or not).
+        if a:hl >=10 || exists("a:000[0][1]") && type(a:000[0][1]) == 1 && a:000[0][1] =~ '\v^\[\d+\]$'
             call s:ZeroQuote_ZQEcho(a:hl, a:000[0])
         else
-            call s:ZeroQuote_ZQEcho(a:hl, extend(["[".a:linenum."]"], a:000[0]))
+            call s:ZeroQuote_ZQEcho(a:hl, extend(["%6.[".a:linenum."]%".a:hl."."], a:000))
         endif
     endif
 endfunc
 " }}}
-" FUNCTION: s:ZeroQuote_DeployDeferred_TimerTriggered_Message() {{{
-function! s:ZeroQuote_DeployDeferred_TimerTriggered_Message(dict,key,...)
+" FUNCTION: s:ZeroQuote_DeployDeferred_TimerTriggered_Message(the_msg) {{{
+function! s:ZeroQuote_DeployDeferred_TimerTriggered_Message(the_msg,...)
+    " Force-reset of the already deployed/deferred messages?
+    " Done on the double-bang, i.e.: ZQEcho!! …
     if a:0 && a:1 > 0
-        let [s:ZeroQuote_ZQEcho, s:ZeroQuote_ZQEcho_idx] = [ exists("s:ZeroQuote_ZQEcho") ? s:ZeroQuote_ZQEcho : [], exists("s:ZeroQuote_ZQEcho_idx") ? s:ZeroQuote_ZQEcho_idx : 0 ]
+        let s:ZeroQuote_deferredMessageQueue = []
     endif
-    if has_key(a:dict,a:key)
-        let s:ZeroQuote_ZQEcho = a:dict[a:key]
-        if a:0 && a:1 >= 0
-            call add(s:ZeroQuote_ZQEcho, s:ZeroQuote_ZQEcho)
-            call add(s:ZeroQuote_timers, timer_start(a:0 >= 2 ? a:2 : 20, function("s:ZeroQuote_deferredMessageShow")))
-            let s:ZeroQuote_ZQEcho_idx = s:ZeroQuote_ZQEcho_idx == -1 ? 0 : s:ZeroQuote_ZQEcho_idx
+
+    if a:0 && a:1 >= 0
+        call add(s:ZeroQuote_deferredMessageQueue, a:the_msg)
+        call add(s:ZeroQuote_timers, timer_start(a:0 >= 2 ? a:2 : 10, function("ZeroQuote_showDeferredMessageCallback")))
+    else
+        " A non-deploy theoretical-scenario, for niceness of the API.
+        if type(a:the_msg) = v:t_list
+            "10ZQEcho a:the_msg
+            call s:ZeroQuote_ZQEcho(10, a:the_msg)
         else
-            if type(s:ZeroQuote_ZQEcho) == 3 || !empty(substitute(s:ZeroQuote_ZQEcho,"^%[^.]*:","","g"))
-                if type(s:ZeroQuote_ZQEcho) == 3
-                    call s:ZeroQuote_ZQEcho(10, s:ZeroQuote_ZQEcho)
-                else
-                    10ZQEcho s:ZeroQuote_ZQEcho
-                endif
-                redraw
-            endif
+            10ZQEcho a:the_msg
         endif
     endif
 endfunc
 " }}}
-" FUNCTION: s:ZeroQuote_deferredMessageShow(timer) {{{
-function! s:ZeroQuote_deferredMessageShow(timer)
+" FUNCTION: ZeroQuote_showDeferredMessageCallback(timer) {{{
+function! ZeroQuote_showDeferredMessageCallback(timer)
     call filter( s:ZeroQuote_timers, 'v:val != a:timer' )
-    if type(s:ZeroQuote_ZQEcho[s:ZeroQuote_ZQEcho_idx]) == 3
-        call s:ZeroQuote_ZQEcho(10,s:ZeroQuote_ZQEcho[s:ZeroQuote_ZQEcho_idx])
+    let msg = remove(s:ZeroQuote_deferredMessageQueue, 0)
+    if type(msg) == v:t_list
+        call s:ZeroQuote_ZQEcho(10, l:msg)
     else
-        10ZQEcho s:ZeroQuote_ZQEcho[s:ZeroQuote_ZQEcho_idx]
+        10ZQEcho l:msg
     endif
-    let s:ZeroQuote_ZQEcho_idx += 1
     redraw
 endfunc
 " }}}
