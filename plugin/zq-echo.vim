@@ -352,14 +352,14 @@ function! s:ZeroQuote_evalArgs(args,l,a)
         " 3 — the optional opening paren
         " 4 — the optional closing paren
         " 5 — %endcolor.
-        let __mres = matchlist(__cur_arg, '\v^(\%%([0-9-]+\.=|[a-zA-Z0-9_-]*\.))=(([(]=)-=[svbgla]:[a-zA-Z0-9._]+%(\[[^]]+\])*([)]=))(\%%([0-9-]+\.=|[a-zA-Z0-9_-]*\.))=$')
+        let __mres = matchlist(__cur_arg, '\v^(\%%([0-9-]+\.=|[a-zA-Z0-9_-]*\.))=(([(]=)-=[svbwtgla]:[a-zA-Z0-9._]+%(\[[^]]+\])*([)]=))(\%%([0-9-]+\.=|[a-zA-Z0-9_-]*\.))=$')
         " Not a variable-expression? → return the original string…
         if empty(__mres) || __mres[3].__mres[4] !~ '^\(()\)\=$'
             "echom "Returning «original» for" __cur_arg
             continue
         endif
         " Separate-out the core-variable name and the __sign.
-        let __no_dict_arg = substitute(__mres[2], '^[(]\=\(-\=\)[svbgla]:\(.\{-}\)[)]\=$', '\1\2', '')
+        let __no_dict_arg = substitute(__mres[2], '^[(]\=\(-\=\)[svbwtgla]:\(.\{-}\)[)]\=$', '\1\2', '')
         "echom __no_dict_arg "// 1"
         let __sign = (__no_dict_arg =~ '^-.*') ? -1 : 1
         if __sign < 0
@@ -423,10 +423,10 @@ function! s:ZeroQuote_evalArgs(args,l,a)
                 call add(__already_evaluated, 1)
 
                 " A variable?
-                if __arg =~# '\v^\s*[svgb]:[a-zA-Z_][a-zA-Z0-9._]*%(\[[^]]+\])*\s*$'
+                if __arg =~# '\v^\s*[svwtgb]:[a-zA-Z_][a-zA-Z0-9._]*%(\[[^]]+\])*\s*$'
                     let __arg = s:ZeroQuote_ExpandVars("{".__arg."}")
                 " A function call or an expression wrapped in parens?
-                elseif __arg =~# '\v^\s*(([svgb]:)=[a-zA-Z_][a-zA-Z0-9_-]*)=\s*\(.*\)\s*$'
+                elseif __arg =~# '\v^\s*(([svwtgb]:)=[a-zA-Z_][a-zA-Z0-9_-]*)=\s*\(.*\)\s*$'
                     let __arg = eval(__arg)
                 " A \-quoted atom?
                 elseif __arg[0] == '\'
@@ -463,7 +463,7 @@ func! s:ZeroQuote_ExpandVars(text_or_texts)
         return texts
     elseif type(a:text_or_texts) == v:t_string
         " String input.
-        return substitute(a:text_or_texts, '\v\{((:[^}]+|([svgb]\:|\&)[a-zA-Z_]
+        return substitute(a:text_or_texts, '\v\{((:[^}]+|([svwtgb]\:|\&)[a-zA-Z_]
                         \[a-zA-Z0-9._]*%(\[[^]]+\])*))\}',
                         \ '\=((submatch(1)[0] == ":") ?
                         \ ((submatch(1)[1] == ":") ?
