@@ -122,9 +122,9 @@ function! s:ZeroQuote_ZQEcho(hl, ...)
     let args = copy(a:000[0])
 
     " Strip the line-number argument for the user- (count>=10) messages.
-    if a:hl >= 10 && type(args[0]) == v:t_string &&
-                \ args[0] =~ '\v^\s*(\%([0-9-]+\.=|[a-zA-Z0-9_-]*\.))=\s*\[\d*\]
-                    \\s*(\%([0-9-]+\.=|[a-zA-Z0-9_-]*\.))=\s*$'
+    if a:hl >= 7 && type(args[0]) == v:t_string &&
+                \ args[0] =~ '\v^\s*(\%([0-9-]+\.=|[a-za-z0-9_-]*\.))=\s*\[\d*\]
+                    \\s*(\%([0-9-]+\.=|[a-za-z0-9_-]*\.))=\s*$'
         let args = args[1:]
     endif
     " Normalize higlight/count.
@@ -229,14 +229,12 @@ function! s:ZeroQuote_ZQEchoCmdImpl(hl, bang, linenum, msg_bits)
     if(!empty(a:bang))
         call s:ZeroQuote_DeployDeferred_TimerTriggered_Message(extend([hi], msg_arr), 0)
     else
-        let [__sdict_extended,__sid] = s:ZeroQuote_TryExtendSDict()
         " Prepend the debug- [line-number] space-separated word if needed, i.e.:
         " if it's not a user-message (i.e.: if log-level/the-<count> < 10) AND
         " if not already prepended (the call might be from various sources, like
         " timeout-callback, so in general it isn't well known if the message is
         " pre-processed or not).
         call s:ZeroQuote_ZQEcho(hi, msg_arr)
-        call s:ZeroQuote_TryRestoreSDict(__sdict_extended,__sid)
     endif
 endfunc
 " }}}
@@ -336,7 +334,7 @@ endfunc
 " }}}
 " FUNCTION: s:ZeroQuote_evalArgs() {{{
 function! s:ZeroQuote_evalArgs(args,l,a)
-    "echom "ENTRY —→ dict:l °" a:l "° —→ dict:a °" a:a "° —→ dict:s °" a:s
+    "echom "ENTRY —→ dict:l °" a:l "° —→ dict:a °" a:a "°"
     call extend(l:,a:l)
     let [__sdict_extended,__sid] = s:ZeroQuote_TryExtendSDict()
     "echom "EXTENDED:" s:
