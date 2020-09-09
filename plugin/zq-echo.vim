@@ -69,6 +69,8 @@ hi! zq_yellow ctermfg=190
 hi! zq_lyellow ctermfg=yellow cterm=bold
 hi! zq_lyellow2 ctermfg=221
 hi! zq_lyellow3 ctermfg=226
+hi! zq_orange3 ctermfg=172
+hi! zq_orange4 ctermfg=94
 hi! zq_green ctermfg=green
 hi! zq_green2 ctermfg=35
 hi! zq_green3 ctermfg=40
@@ -91,12 +93,14 @@ hi! zq_gray ctermfg=gray
 " Initialize globals.
 " Retain previous messages ↔ allow reloading the plugin preserving the state.
 let g:zq_messages = exists("g:zq_messages") ? g:zq_messages : []
+" A global, common timer-list for pausing…
+let g:timers = exists("g:timers") ? g:timers : []
 
 " Session-variables initialization.
 " zq_-prefix is being used for easier completing.
 let s:zq_MessagesCmd_state = 0
 let s:zq_deferredMessagesQueue = []
-let s:zq_timers = []
+let s:zq_timers = g:timers
 let s:zq_s_dict_providers = exists("s:zq_s_dict_providers") ? s:zq_s_dict_providers : {}
 
 """""""""""""""""" THE END OF THE SCRIPT BODY }}}
@@ -114,63 +118,26 @@ function! s:ZeroQuote_ZQEcho(hl, ...)
         return
     endif
 
-    " Make a copy of the input.
-    let args = deepcopy(type(a:000[0]) == 3 ? a:000[0] : a:000)
-    " Strip the line-number argumen for the user- (count>=7) messages.
-    if a:hl >= 7 && type(args[0]) == v:t_string &&
-                \ args[0] =~ '\v^\[\d*\]$' | let args = args[1:] | endif
+    " The input…
+    let args = copy(a:000[0])
+
+    " Strip the line-number argument for the user- (count>=10) messages.
+    if a:hl >= 10 && type(args[0]) == v:t_string &&
+                \ args[0] =~ '\v^\s*(\%([0-9-]+\.=|[a-zA-Z0-9_-]*\.))=\s*\[\d*\]
+                    \\s*(\%([0-9-]+\.=|[a-zA-Z0-9_-]*\.))=\s*$'
+        let args = args[1:]
+    endif
     " Normalize higlight/count.
-    let hl = a:hl >= 7 ? (a:hl-7) : a:hl
+    let hl = a:hl >= 10 ? (a:hl-10) : a:hl
 
-    " Expand any variables and concatenate separated atoms wrapped in parens.
-    if ! s:zq_MessagesCmd_state
-        let start_idx = -1
-        let new_args = []
-        for idx in range(len(args))
-            let arg = args[idx]
-            " Unclosed paren?
-            " Discriminate two special cases: (func() and (func(sub_func())
-            if start_idx == -1
-                if type(arg) == v:t_string && arg =~# '\v^\(.*([^)]|\([^)]*\)|\([^(]*\([^)]*\)[^)]*\))$'
-                    let start_idx = idx
-                endif
-            " A free, closing paren?
-            elseif start_idx >= 0
-                if type(arg) == v:t_string && arg =~# '\v^[^(].*\)$' && arg !~ '\v\([^)]*\)$'
-                    call add(new_args,eval(join(args[start_idx:idx])))
-                    let start_idx = -1
-                    continue
-                endif
-            endif
-
-            if start_idx == -1
-                " Compensate for explicit variable-expansion requests or {:ex commands…}, etc.
-                let arg = s:ZeroQuote_ExpandVars(arg)
-
-                if type(arg) == v:t_string
-                    " A variable?
-                    if arg =~# '\v^\s*[svgb]:[a-zA-Z_][a-zA-Z0-9._]*%(\[[^]]+\])*\s*$'
-                        let arg = s:ZeroQuote_ExpandVars("{".arg."}")
-                    " A function call or an expression wrapped in parens?
-                    elseif arg =~# '\v^\s*(([svgb]:)=[a-zA-Z_][a-zA-Z0-9_-]*)=\s*\(.*\)\s*$'
-                        let arg = eval(arg)
-                    " A \-quoted atom?
-                    elseif arg[0] == '\'
-                        let arg = arg[1:]
-                    endif
-                endif
-
-                " Store/save the element.
-                call add(new_args, arg)
-            endif
-        endfor
-        let args = new_args
-        " Store the message in a custom history.
+    if !s:zq_MessagesCmd_state
+        " Store the message in a custom history, accessible via :Messages
+        " command.
         call add(g:zq_messages, extend([a:hl], args))
     endif
 
     " Finally: detect %…. infixes, select color, output the message bit by bit.
-    let c = ["Error", "red", "green4", "gold", "blue2", "magenta", "cyan", "white", "gray", "bluemsg"]
+    let c = ["Error", "red", "green2", "orange3", "blue2", "magenta", "cyan", "white", "gray", "bluemsg"]
     let [pause,new_msg_pre,new_msg_post] = s:ZeroQuote_GetPrefixValue('p%[ause]', join(args) )
     let msg = new_msg_pre . new_msg_post
 
@@ -329,6 +296,7 @@ endfunc
 " }}}
 " FUNCTION: s:ZeroQuote_DoPause(pause_value) {{{
 function! s:ZeroQuote_DoPause(pause_value)
+    "echom a:pause_value "← a:pause_value"
     if a:pause_value =~ '\v^-=\d+(\.\d+)=$'
         let s:ZeroQuote_pause_value = float2nr(round(str2float(a:pause_value) * 1000.0))
     else
@@ -373,18 +341,19 @@ function! s:ZeroQuote_evalArgs(args,l,a)
     let [__sdict_extended,__sid] = s:ZeroQuote_TryExtendSDict()
     "echom "EXTENDED:" s:
     if a:args[0] == '<args>:'
-        let __args = a:args[1]
+        let __args = deepcopy(a:args[1])
     else
-        let __args = a:args
+        let __args = deepcopy(a:args)
     endif
+
     let __idx=-1
     for __cur_arg in __args
         let __idx += 1
-        " 1 — %firstcol.
+        " 1 — %firstcolor.
         " 2 — whole expression, possibly (-l:var)
         " 3 — the optional opening paren
         " 4 — the optional closing paren
-        " 5 — %endcol.
+        " 5 — %endcolor.
         let __mres = matchlist(__cur_arg, '\v^(\%%([0-9-]+\.=|[a-zA-Z0-9_-]*\.))=(([(]=)-=[svbgla]:[a-zA-Z0-9._]+%(\[[^]]+\])*([)]=))(\%%([0-9-]+\.=|[a-zA-Z0-9_-]*\.))=$')
         " Not a variable-expression? → return the original string…
         if empty(__mres) || __mres[3].__mres[4] !~ '^\(()\)\=$'
@@ -422,6 +391,62 @@ function! s:ZeroQuote_evalArgs(args,l,a)
             "echom "Doesn't exist" substitute(__mres[2], '\v(^\(=-=|\)=$)', "", "g") "///" __mres[2]
         endif
     endfor
+
+    " Expand any variables and concatenate separated atoms wrapped in parens.
+    let __start_idx = -1
+    let __new_args = []
+    let __already_evaluated = []
+    let __new_idx = 0
+    for __idx in range(len(__args))
+        let __arg = __args[__idx]
+        " Unclosed paren?
+        " Discriminate two special cases: (func() and (func(sub_func())
+        if __start_idx == -1
+            if type(__arg) == v:t_string && __arg =~# '\v^\(.*([^)]|\([^)]*\)|\([^(]*\([^)]*\)[^)]*\))$'
+                let __start_idx = __idx
+            endif
+        " A free, closing paren?
+        elseif __start_idx >= 0
+            if type(__arg) == v:t_string && __arg =~# '\v^[^(].*\)$' && __arg !~ '\v\([^)]*\)$'
+                call add(__new_args,eval(join(__args[__start_idx:__idx])))
+                call add(__already_evaluated, 1)
+                let __start_idx = -1
+                continue
+            endif
+        endif
+
+        " …no multi-part token is being built…
+        if __start_idx == -1
+            " Compensate for explicit variable-expansion requests or {:ex commands…}, etc.
+            let __arg = s:ZeroQuote_ExpandVars(__arg)
+            "echom __arg
+
+            if type(__arg) == v:t_string
+                call add(__already_evaluated, 1)
+
+                " A variable?
+                if __arg =~# '\v^\s*[svgb]:[a-zA-Z_][a-zA-Z0-9._]*%(\[[^]]+\])*\s*$'
+                    let __arg = s:ZeroQuote_ExpandVars("{".__arg."}")
+                " A function call or an expression wrapped in parens?
+                elseif __arg =~# '\v^\s*(([svgb]:)=[a-zA-Z_][a-zA-Z0-9_-]*)=\s*\(.*\)\s*$'
+                    let __arg = eval(__arg)
+                " A \-quoted atom?
+                elseif __arg[0] == '\'
+                    let __arg = __arg[1:]
+                else
+                    let __already_evaluated[__new_idx] = 0
+                endif
+            else
+                call add(__already_evaluated, 0)
+            endif
+
+            " Store/save the element.
+            call add(__new_args, __arg)
+            " Increase the following-index…
+            let __new_idx += 1
+        endif
+    endfor
+    let __args = __new_args
     call s:ZeroQuote_TryRestoreSDict(__sdict_extended,__sid)
     return __args
 endfunc
