@@ -40,9 +40,17 @@
 
 """""""""""""""""" THE SCRIPT BODY {{{
 
+function! s:ZeroQuote_AddSDictFor(Ref)
+    let l:the_sid = matchstr(string(a:Ref),'<SNR>\zs\d\+\ze_')
+    "4ZQEcho FOR: ≈ %1Dict:%2. l:dict %3•°•%1 input-SID:%4 l:the_sid %3•°•%1 Own-SID:%2 expand('<SID>') •°•
+    let s:zq_s_dict_providers[l:the_sid] = a:Ref
+endfunc
+
 " ZQEcho — echo-smart command.
 command! -nargs=+ -count=4 -bang -bar -complete=var ZQEcho call s:ZeroQuote_ZQEchoCmdImpl(<count>,<q-bang>,expand("<sflnum>"),
             \ s:ZeroQuote_evalArgs([<f-args>],exists("l:")?(l:):{},exists("a:")?(a:):{}))
+
+command! -nargs=1 ZQSetSDictFunc call s:ZeroQuote_AddSDictFor(<args>)
 
 " Messages command.
 command! -nargs=? Messages call Messages(<q-args>)
@@ -81,12 +89,13 @@ hi! zq_white ctermfg=white
 hi! zq_gray ctermfg=gray
 
 " Initialize globals.
-let g:zq_messages = []
+let g:zq_messages = exists("g:zq_messages") ? g:zq_messages : []
 
 " Session-variables initialization.
-let s:ZeroQuote_Messages_state = 0
-let s:ZeroQuote_deferredMessageQueue = []
-let s:ZeroQuote_timers = []
+let s:zq_MessagesCmd_state = 0
+let s:deferredMessagesQueue = []
+let s:zq_timers = []
+let s:zq_s_dict_providers = exists("s:zq_s_dict_providers") ? s:zq_s_dict_providers : {}
 
 """""""""""""""""" THE END OF THE SCRIPT BODY }}}
 
@@ -112,7 +121,7 @@ function! s:ZeroQuote_ZQEcho(hl, ...)
     let hl = a:hl >= 7 ? (a:hl-7) : a:hl
 
     " Expand any variables and concatenate separated atoms wrapped in parens.
-    if ! s:ZeroQuote_Messages_state
+    if ! s:zq_MessagesCmd_state
         let start_idx = -1
         let new_args = []
         for idx in range(len(args))
@@ -155,7 +164,7 @@ function! s:ZeroQuote_ZQEcho(hl, ...)
         endfor
         let args = new_args
         " Store the message in a custom history.
-        call add(g:messages, extend([a:hl], args))
+        call add(g:zq_messages, extend([a:hl], args))
     endif
 
     " Finally: detect %…. infixes, select color, output the message bit by bit.
@@ -214,11 +223,11 @@ function! s:ZeroQuote_ZQEcho(hl, ...)
     echohl None
 
     " 'Submit' the message so that it cannot be deleted with \r…
-    if s:ZeroQuote_Messages_state && !empty(filter(arr_msg,'!empty(v:val)'))
+    if s:zq_MessagesCmd_state && !empty(filter(arr_msg,'!empty(v:val)'))
         echon "\n"
     endif
 
-    if !s:ZeroQuote_Messages_state && !empty(filter(arr_msg,'!empty(v:val)'))
+    if !s:zq_MessagesCmd_state && !empty(filter(arr_msg,'!empty(v:val)'))
         call s:ZeroQuote_DoPause(pause)
     endif
 endfunc
@@ -251,26 +260,52 @@ function! s:ZeroQuote_ZQEchoCmdImpl(hl, bang, linenum, msg_bits)
     if(!empty(a:bang))
         call s:ZeroQuote_DeployDeferred_TimerTriggered_Message(extend([hi], msg_arr), 0)
     else
+        let [__sdict_extended,__sid] = s:ZeroQuote_TryExtendSDict()
         " Prepend the debug- [line-number] space-separated word if needed, i.e.:
         " if it's not a user-message (i.e.: if log-level/the-<count> < 10) AND
         " if not already prepended (the call might be from various sources, like
         " timeout-callback, so in general it isn't well known if the message is
         " pre-processed or not).
         call s:ZeroQuote_ZQEcho(hi, msg_arr)
+        call s:ZeroQuote_TryRestoreSDict(__sdict_extended,__sid)
     endif
 endfunc
 " }}}
+function! s:ZeroQuote_TryExtendSDict()
+    let stack = expand("<stack>")
+    for sid in keys(s:zq_s_dict_providers)
+        let Ref = s:zq_s_dict_providers[sid]
+        if !empty(matchstr(stack,'<SNR>\zs'.sid.'\ze_'))
+            "echom 'yes for:' sid "←—→" stack "←—→" Ref()
+            let g:sdict_bkp = deepcopy(s:)
+            call extend(s:,Ref())
+            return [1,sid]
+        endif
+    endfor
+    "echom "NO for ——→" stack
+    return [0,0]
+endfunc
+function! s:ZeroQuote_TryRestoreSDict(is_needed,sid)
+    if a:is_needed
+        let Ref = s:zq_s_dict_providers[a:sid]
+        for __key in keys(Ref())
+            call remove(s:, __key)
+        endfor
+        call extend(s:, g:sdict_bkp)
+        let g:sdict_bkp = {}
+    endif
+endfunc
 " FUNCTION: s:ZeroQuote_DeployDeferred_TimerTriggered_Message(the_msg) {{{
 function! s:ZeroQuote_DeployDeferred_TimerTriggered_Message(the_msg,...)
     " Force-reset of the already deployed/deferred messages?
     " Done on the double-bang, i.e.: ZQEcho!! …
     if a:0 && a:1 > 0
-        let s:ZeroQuote_deferredMessageQueue = []
+        let s:deferredMessagesQueue = []
     endif
 
     if a:0 && a:1 >= 0
-        call add(s:ZeroQuote_deferredMessageQueue, a:the_msg)
-        call add(s:ZeroQuote_timers, timer_start(a:0 >= 2 ? a:2 : 10, function("ZeroQuote_showDeferredMessageCallback")))
+        call add(s:deferredMessagesQueue, a:the_msg)
+        call add(s:zq_timers, timer_start(a:0 >= 2 ? a:2 : 10, function("ZeroQuote_showDeferredMessageCallback")))
     else
         " A non-deploy theoretical-scenario, for niceness of the API.
         if type(a:the_msg) = v:t_list
@@ -284,8 +319,8 @@ endfunc
 " }}}
 " FUNCTION: ZeroQuote_showDeferredMessageCallback(timer) {{{
 function! ZeroQuote_showDeferredMessageCallback(timer)
-    call filter( s:ZeroQuote_timers, 'v:val != a:timer' )
-    let msg = remove(s:ZeroQuote_deferredMessageQueue, 0)
+    call filter( s:zq_timers, 'v:val != a:timer' )
+    let msg = remove(s:deferredMessagesQueue, 0)
     call s:ZeroQuote_ZQEchoCmdImpl(19, '', '', l:msg)
     redraw
 endfunc
@@ -305,34 +340,36 @@ endfunc
 " }}}
 " FUNCTION: s:ZeroQuote_redraw(timer) {{{
 function! s:ZeroQuote_redraw(timer)
-    call filter( s:ZeroQuote_timers, 'v:val != a:timer' )
+    call filter( s:zq_timers, 'v:val != a:timer' )
     redraw
 endfunc
 " }}}
 " FUNCTION: s:ZeroQuote_PauseAllTimers() {{{
 function! s:ZeroQuote_PauseAllTimers(pause,time)
-    for t in s:ZeroQuote_timers
+    for t in s:zq_timers
         call timer_pause(t,a:pause)
     endfor
 
     if a:pause && a:time > 0
         " Limit the amount of time of the pause.
-        call add(s:ZeroQuote_timers, timer_start(a:time, function("s:ZeroQuote_UnPauseAllTimersCallback")))
+        call add(s:zq_timers, timer_start(a:time, function("s:ZeroQuote_UnPauseAllTimersCallback")))
     endif
 endfunc
 " }}}
 " FUNCTION: s:ZeroQuote_UnPauseAllTimersCallback() {{{
 function! s:ZeroQuote_UnPauseAllTimersCallback(timer)
-    call filter( s:ZeroQuote_timers, 'v:val != a:timer' )
-    for t in s:ZeroQuote_timers
+    call filter( s:zq_timers, 'v:val != a:timer' )
+    for t in s:zq_timers
         call timer_pause(t,0)
     endfor
 endfunc
 " }}}
 " FUNCTION: s:ZeroQuote_evalArgs() {{{
 function! s:ZeroQuote_evalArgs(args,l,a)
-    "echom "ENTRY —→ dict:l °" a:l "° —→ dict:a °" a:a "°"
+    "echom "ENTRY —→ dict:l °" a:l "° —→ dict:a °" a:a "° —→ dict:s °" a:s
     call extend(l:,a:l)
+    let [__sdict_extended,__sid] = s:ZeroQuote_TryExtendSDict()
+    "echom "EXTENDED:" s:
     if a:args[0] == '<args>:'
         let __args = a:args[1]
     else
@@ -381,6 +418,7 @@ function! s:ZeroQuote_evalArgs(args,l,a)
             let __args[__idx] = __mres[1] . __value . __mres[5]
         endif
     endfor
+    call s:ZeroQuote_TryRestoreSDict(__sdict_extended,__sid)
     return __args
 endfunc
 " }}}
@@ -443,14 +481,14 @@ endfunc
 " FUNCTION: Messages(arg=v:none) {{{
 function! Messages(arg=v:none)
     if a:arg == "clear"
-        let g:messages = []
+        let g:zq_messages = []
         return
     endif
-    let s:ZeroQuote_Messages_state = 1
-    for msg in g:messages
+    let s:zq_MessagesCmd_state = 1
+    for msg in g:zq_messages
         call s:ZeroQuote_ZQEcho(msg[0],msg[1:])
     endfor
-    let s:ZeroQuote_Messages_state = 0
+    let s:zq_MessagesCmd_state = 0
 endfunc
 " }}}
 """""""""""""""""" THE END OF THE UTILITY FUNCTIONS }}}
