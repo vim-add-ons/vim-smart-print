@@ -45,7 +45,7 @@ command! -nargs=+ -count=4 -bang -bar -complete=var ZQEcho call s:ZeroQuote_ZQEc
             \ s:ZeroQuote_evalArgs([<f-args>],exists("l:")?(l:):{},exists("a:")?(a:):{}))
 
 " Messages command.
-command! -nargs=? Messages call <Plug>Messages(<q-args>)
+command! -nargs=? Messages call Messages(<q-args>)
 
 " Common highlight definitions.
 hi! zq_norm ctermfg=7
@@ -99,7 +99,7 @@ let s:ZeroQuote_timers = []
 " 5 - debug2        …
 function! s:ZeroQuote_ZQEcho(hl, ...)
     " Log only warnings and errors by default.
-    if a:hl < 7 && a:hl > get(g:,'user_menu_log_level', 1) || a:0 == 0
+    if a:hl < 7 && a:hl > get(g:,'zqecho_log_level', 1) || a:0 == 0
         return
     endif
 
@@ -214,7 +214,7 @@ function! s:ZeroQuote_ZQEcho(hl, ...)
     echohl None
 
     " 'Submit' the message so that it cannot be deleted with \r…
-    if s:ZeroQuote_Messages_state
+    if s:ZeroQuote_Messages_state && !empty(filter(arr_msg,'!empty(v:val)'))
         echon "\n"
     endif
 
