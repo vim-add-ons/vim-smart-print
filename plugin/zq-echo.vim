@@ -89,11 +89,13 @@ hi! zq_white ctermfg=white
 hi! zq_gray ctermfg=gray
 
 " Initialize globals.
+" Retain previous messages ↔ allow reloading the plugin preserving the state.
 let g:zq_messages = exists("g:zq_messages") ? g:zq_messages : []
 
 " Session-variables initialization.
+" zq_-prefix is being used for easier completing.
 let s:zq_MessagesCmd_state = 0
-let s:deferredMessagesQueue = []
+let s:zq_deferredMessagesQueue = []
 let s:zq_timers = []
 let s:zq_s_dict_providers = exists("s:zq_s_dict_providers") ? s:zq_s_dict_providers : {}
 
@@ -300,11 +302,11 @@ function! s:ZeroQuote_DeployDeferred_TimerTriggered_Message(the_msg,...)
     " Force-reset of the already deployed/deferred messages?
     " Done on the double-bang, i.e.: ZQEcho!! …
     if a:0 && a:1 > 0
-        let s:deferredMessagesQueue = []
+        let s:zq_deferredMessagesQueue = []
     endif
 
     if a:0 && a:1 >= 0
-        call add(s:deferredMessagesQueue, a:the_msg)
+        call add(s:zq_deferredMessagesQueue, a:the_msg)
         call add(s:zq_timers, timer_start(a:0 >= 2 ? a:2 : 10, function("ZeroQuote_showDeferredMessageCallback")))
     else
         " A non-deploy theoretical-scenario, for niceness of the API.
@@ -320,7 +322,7 @@ endfunc
 " FUNCTION: ZeroQuote_showDeferredMessageCallback(timer) {{{
 function! ZeroQuote_showDeferredMessageCallback(timer)
     call filter( s:zq_timers, 'v:val != a:timer' )
-    let msg = remove(s:deferredMessagesQueue, 0)
+    let msg = remove(s:zq_deferredMessagesQueue, 0)
     call s:ZeroQuote_ZQEchoCmdImpl(19, '', '', l:msg)
     redraw
 endfunc
