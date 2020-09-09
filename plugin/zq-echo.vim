@@ -403,19 +403,21 @@ function! s:ZeroQuote_evalArgs(args,l,a)
         if __mres[2] =~ '^(\=-\=a:.*'
             "echom "From-dict path ↔" __no_dict_arg "—→" get(a:a, __no_dict_arg, "<no-such-key>")
             if has_key(a:a, __no_dict_arg)
-                let __value = get(a:a, __no_dict_arg, "STRANGE-ERROR…")
-                if type(__value) != v:t_string | let __value = string(__value) | endif
-                let __value = __sign < 0 ? -1*__value : __value
-                let __args[__idx] = __mres[1] . __value . __mres[5]
+                let ValueForFRef = get(a:a, __no_dict_arg, "STRANGE-ERROR…")
+                if type(ValueForFRef) != v:t_string | let ValueForFRef = string(ValueForFRef) | endif
+                let ValueForFRef = __sign < 0 ? -1*ValueForFRef : ValueForFRef
+                let __args[__idx] = __mres[1] . ValueForFRef . __mres[5]
             endif
         elseif exists(substitute(__mres[2], '\v(^\(=-=|\)=$)', "", "g"))
             "echom "From-eval path ↔" __no_dict_arg "↔" eval(__mres[2])
             " Via-eval path…
-            let __value = eval(__mres[2])
-            if type(__value) != v:t_string
-                let __value = string(__value)
+            let ValueForFRef = eval(__mres[2])
+            if type(ValueForFRef) != v:t_string
+                let ValueForFRef = string(ValueForFRef)
             endif
-            let __args[__idx] = __mres[1] . __value . __mres[5]
+            let __args[__idx] = __mres[1] . ValueForFRef . __mres[5]
+        else
+            "echom "Doesn't exist" substitute(__mres[2], '\v(^\(=-=|\)=$)', "", "g") "///" __mres[2]
         endif
     endfor
     call s:ZeroQuote_TryRestoreSDict(__sdict_extended,__sid)
