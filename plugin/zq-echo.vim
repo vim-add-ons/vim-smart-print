@@ -42,7 +42,7 @@
 
 " ZQEcho — echo-smart command.
 command! -nargs=+ -count=4 -bang -bar -complete=var ZQEcho call s:ZeroQuote_ZQEchoCmdImpl(<count>,<q-bang>,expand("<sflnum>"),
-            \ map([<f-args>], 's:ZeroQuote_evalArg(exists("l:")?(l:):{},exists("a:")?(a:):{},v:val)' ))
+            \ s:ZeroQuote_evalArgs([<f-args>],exists("l:")?(l:):{},exists("a:")?(a:):{}))
 
 " Messages command.
 command! -nargs=? Messages call <Plug>Messages(<q-args>)
@@ -75,6 +75,10 @@ hi! zq_lgreen3 ctermfg=154
 hi! zq_lbgreen ctermfg=lightgreen cterm=bold
 hi! zq_lbgreen2 ctermfg=118 cterm=bold
 hi! zq_lbgreen3 ctermfg=154 cterm=bold
+hi! zq_magenta ctermfg=magenta
+hi! zq_cyan ctermfg=cyan
+hi! zq_white ctermfg=white
+hi! zq_gray ctermfg=gray
 
 " Initialize globals.
 let g:zq_messages = []
@@ -155,7 +159,7 @@ function! s:ZeroQuote_ZQEcho(hl, ...)
     endif
 
     " Finally: detect %…. infixes, select color, output the message bit by bit.
-    let c = ["Error", "red", "green4", "gold", "blue2", "magenta", "cyan", "white", "None", "bluemsg"]
+    let c = ["Error", "red", "green4", "gold", "blue2", "magenta", "cyan", "white", "gray", "bluemsg"]
     let [pause,new_msg_pre,new_msg_post] = s:ZeroQuote_GetPrefixValue('p%[ause]', join(args) )
     let msg = new_msg_pre . new_msg_post
 
@@ -222,21 +226,37 @@ endfunc
 "
 """""""""""""""""" HELPER FUNCTIONS {{{
 " FUNCTION: s:ZeroQuote_ZQEchoCmdImpl(hl,...) {{{
-function! s:ZeroQuote_ZQEchoCmdImpl(hl, bang, linenum, ...)
+function! s:ZeroQuote_ZQEchoCmdImpl(hl, bang, linenum, msg_bits)
+    " Presume a cmdline-window invocation and prepend the history-index instead.
+    if a:hl < 10 && empty(a:linenum)
+        let line = "cmd:" . histnr("cmd")
+    else
+        let line = a:linenum
+    endif
+
+    " Establish log-level, specifically for an asynchroneous message.
+    if a:hl == 19 && a:msg_bits[0] =~ '^\d\+$'
+        let msg_arr = a:msg_bits[1:]
+        let hi = a:msg_bits[0]
+    else
+        let msg_arr = a:msg_bits
+        let hi = a:hl
+    endif
+
+    " Prepend the line number if required…
+    let msg_arr = ((hi<10 && !empty(line) && string(msg_arr[0]) !~# '\v^''\[(cmd:)=\d+\]''$') ?
+                \ extend(["%4.[".line."]%".hi."."], msg_arr) : msg_arr)
+
+    " Async-message?
     if(!empty(a:bang))
-        call s:ZeroQuote_DeployDeferred_TimerTriggered_Message(
-                    \ (a:hl < 7 ? extend(["[".a:linenum."]"], a:000[0]) : a:000[0]), 0)
+        call s:ZeroQuote_DeployDeferred_TimerTriggered_Message(extend([hi], msg_arr), 0)
     else
         " Prepend the debug- [line-number] space-separated word if needed, i.e.:
         " if it's not a user-message (i.e.: if log-level/the-<count> < 10) AND
         " if not already prepended (the call might be from various sources, like
         " timeout-callback, so in general it isn't well known if the message is
         " pre-processed or not).
-        if a:hl >=10 || exists("a:000[0][1]") && type(a:000[0][1]) == 1 && a:000[0][1] =~ '\v^\[\d+\]$'
-            call s:ZeroQuote_ZQEcho(a:hl, a:000[0])
-        else
-            call s:ZeroQuote_ZQEcho(a:hl, extend(["%6.[".a:linenum."]%".a:hl."."], a:000))
-        endif
+        call s:ZeroQuote_ZQEcho(hi, msg_arr)
     endif
 endfunc
 " }}}
@@ -255,7 +275,7 @@ function! s:ZeroQuote_DeployDeferred_TimerTriggered_Message(the_msg,...)
         " A non-deploy theoretical-scenario, for niceness of the API.
         if type(a:the_msg) = v:t_list
             "10ZQEcho a:the_msg
-            call s:ZeroQuote_ZQEcho(10, a:the_msg)
+            10ZQEcho <args>: a:the_msg
         else
             10ZQEcho a:the_msg
         endif
@@ -266,11 +286,7 @@ endfunc
 function! ZeroQuote_showDeferredMessageCallback(timer)
     call filter( s:ZeroQuote_timers, 'v:val != a:timer' )
     let msg = remove(s:ZeroQuote_deferredMessageQueue, 0)
-    if type(msg) == v:t_list
-        call s:ZeroQuote_ZQEcho(10, l:msg)
-    else
-        10ZQEcho l:msg
-    endif
+    call s:ZeroQuote_ZQEchoCmdImpl(19, '', '', l:msg)
     redraw
 endfunc
 " }}}
@@ -313,51 +329,59 @@ function! s:ZeroQuote_UnPauseAllTimersCallback(timer)
     endfor
 endfunc
 " }}}
-" FUNCTION: s:ZeroQuote_evalArg() {{{
-function! s:ZeroQuote_evalArg(l,a,arg)
+" FUNCTION: s:ZeroQuote_evalArgs() {{{
+function! s:ZeroQuote_evalArgs(args,l,a)
+    "echom "ENTRY —→ dict:l °" a:l "° —→ dict:a °" a:a "°"
     call extend(l:,a:l)
-    ""echom "ENTRY —→ dict:l °" a:l "° —→ dict:a °" a:a "°"
-    " 1 — %firstcol.
-    " 2 — whole expression, possibly (-l:var)
-    " 3 — the optional opening paren
-    " 4 — the optional closing paren
-    " 5 — %endcol.
-    let mres = matchlist(a:arg, '\v^(\%%([0-9-]+\.=|[a-zA-Z0-9_-]*\.))=(([(]=)-=[svbgla]:[a-zA-Z0-9._]+%(\[[^]]+\])*([)]=))(\%%([0-9-]+\.=|[a-zA-Z0-9_-]*\.))=$')
-    " Not a variable-expression? → return the original string…
-    if empty(mres) || mres[3].mres[4] !~ '^\(()\)\=$'
-        "echom "Returning for" a:arg
-        return a:arg
+    if a:args[0] == '<args>:'
+        let __args = a:args[1]
+    else
+        let __args = a:args
     endif
-    " Separate-out the core-variable name and the sign.
-    let no_dict_arg = substitute(mres[2], '^[(]\=\(-\=\)[svbgla]:\(.\{-}\)[)]\=$', '\1\2', '')
-    "echom no_dict_arg "// 1"
-    let sign = (no_dict_arg =~ '^-.*') ? -1 : 1
-    if sign < 0
-        let no_dict_arg = no_dict_arg[1:]
-    endif
-    "echom no_dict_arg "// 2"
-    
-    " Fetch the values — any variable-expression except for a:, where only
-    " a:simple_forms are allowed, e.g.: no a:complex[s:ZeroQuote_form]…
-    if mres[2] =~ '^(\=-\=a:.*'
-        "echom "From-dict path ↔" no_dict_arg "—→" get(a:a, no_dict_arg, "<no-such-key>")
-        if has_key(a:a, no_dict_arg)
-            let value = get(a:a, no_dict_arg, "STRANGE-ERROR…")
-            let value = sign < 0 ? -1*value : value
-            return mres[1].value.mres[5]
+    let __idx=-1
+    for __cur_arg in __args
+        let __idx += 1
+        " 1 — %firstcol.
+        " 2 — whole expression, possibly (-l:var)
+        " 3 — the optional opening paren
+        " 4 — the optional closing paren
+        " 5 — %endcol.
+        let __mres = matchlist(__cur_arg, '\v^(\%%([0-9-]+\.=|[a-zA-Z0-9_-]*\.))=(([(]=)-=[svbgla]:[a-zA-Z0-9._]+%(\[[^]]+\])*([)]=))(\%%([0-9-]+\.=|[a-zA-Z0-9_-]*\.))=$')
+        " Not a variable-expression? → return the original string…
+        if empty(__mres) || __mres[3].__mres[4] !~ '^\(()\)\=$'
+            "echom "Returning «original» for" __cur_arg
+            continue
         endif
-    elseif exists(substitute(mres[2],'\v(^\(=-=|\)=$)',"","g"))
-        "echom "From-eval path ↔" no_dict_arg "↔" eval(mres[2])
-        " Via-eval path…
-        let value = eval(mres[2])
-        if type(value) != v:t_string
-            let value = string(value)
+        " Separate-out the core-variable name and the __sign.
+        let __no_dict_arg = substitute(__mres[2], '^[(]\=\(-\=\)[svbgla]:\(.\{-}\)[)]\=$', '\1\2', '')
+        "echom __no_dict_arg "// 1"
+        let __sign = (__no_dict_arg =~ '^-.*') ? -1 : 1
+        if __sign < 0
+            let __no_dict_arg = __no_dict_arg[1:]
         endif
-        return mres[1].value.mres[5]
-    endif
-    " Fall-through path ↔ return of the original string.
-    "echom "Fall-through path ↔" no_dict_arg "↔ dict:l °" a:l "° ↔ dict:a °" a:a "°"
-    return a:arg
+        "echom __no_dict_arg "// 2"
+        
+        " Fetch the __values — any variable-expression except for a:, where only
+        " a:simple_forms are allowed, e.g.: no a:complex[s:form]…
+        if __mres[2] =~ '^(\=-\=a:.*'
+            "echom "From-dict path ↔" __no_dict_arg "—→" get(a:a, __no_dict_arg, "<no-such-key>")
+            if has_key(a:a, __no_dict_arg)
+                let __value = get(a:a, __no_dict_arg, "STRANGE-ERROR…")
+                if type(__value) != v:t_string | let __value = string(__value) | endif
+                let __value = __sign < 0 ? -1*__value : __value
+                let __args[__idx] = __mres[1] . __value . __mres[5]
+            endif
+        elseif exists(substitute(__mres[2], '\v(^\(=-=|\)=$)', "", "g"))
+            "echom "From-eval path ↔" __no_dict_arg "↔" eval(__mres[2])
+            " Via-eval path…
+            let __value = eval(__mres[2])
+            if type(__value) != v:t_string
+                let __value = string(__value)
+            endif
+            let __args[__idx] = __mres[1] . __value . __mres[5]
+        endif
+    endfor
+    return __args
 endfunc
 " }}}
 " FUNCTION: s:ZeroQuote_ExpandVars {{{
