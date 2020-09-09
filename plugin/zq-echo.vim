@@ -483,7 +483,7 @@ func! s:ZeroQuote_GetPrefixValue(pfx, msg)
                     \ ':([^:]*):(.*)$' )
     else
         let mres = matchlist( (type(a:msg) == 3 ? a:msg[0] : a:msg),'\v^(.{-})'.a:pfx.
-                    \ '([0-9-]+\.=|[a-zA-Z0-9_-]*\.)(.*)$' )
+                    \ '([0-9-]+[[:space:].]=|[a-zA-Z0-9_-]*[[:space:].])(.*)$' )
     endif
     " Special case → a:msg is a List:
     " It's limited functionality — it doesn't allow to determine the message
@@ -491,12 +491,12 @@ func! s:ZeroQuote_GetPrefixValue(pfx, msg)
     if type(a:msg) == 3 && !empty(mres)
         let cpy = deepcopy(a:msg)
         let cpy[0] = mres[1].mres[3]
-        return [substitute(mres[2],'\.$','','g'),cpy,""]
+        return [substitute(mres[2],'[[:space:].]$','','g'),cpy,""]
     elseif !empty(mres)
         " Regular case → a:msg is a String
         " It returns the message divided into the part that preceded the infix
         " and that followed it.
-        return [ substitute(mres[2],'\.$','','g'), mres[1], mres[3] ]
+        return [ substitute(mres[2],'[[:space:].]$','','g'), mres[1], mres[3] ]
     else
         return [v:none,a:msg,""]
     endif
