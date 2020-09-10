@@ -39,7 +39,7 @@
 " Asynchroneous-printing:
 " -----------------------
 " :ZQEcho! I'll be printed from a timer-callback after 10 ms (default) 
-" :20ZQEcho! Set time-out to 20 ms ↔ counts >= 15 aren't log-levels, but timeouts
+" :200ZQEcho! Set time-out to 200 ms ↔ counts > 25 aren't log-levels, but timeouts
 
 """""""""""""""""" THE SCRIPT BODY {{{
 
@@ -135,7 +135,7 @@ hi! zq_goldmsg ctermfg=35 ctermbg=220 cterm=bold
 " structures.
 function! s:ZeroQuote_AddSDictFor(Ref)
     let l:the_sid = matchstr(string(a:Ref),'<SNR>\zs\d\+\ze_')
-    5ZQEcho! p:0.5:%8 s:-dict offered ≈ %4 a:Ref %8 ≈ %3 •°• %8 in-SID:%2. l:the_sid %3 •°• %8 Own-SID: %2 expand('<SID>') %3•°•
+    1000ZQEcho! p:0.5:%8 s:-dict offered ≈ %4 a:Ref %8 ≈ %3 •°• %8 in-SID:%2. l:the_sid %3 •°• %8 Own-SID: %2 expand('<SID>') %3•°•
     let s:zq_s_dict_providers[l:the_sid] = a:Ref
 endfunc
 " }}}
