@@ -67,7 +67,7 @@ let g:zq_echo_log_level = 3 " Show only messages of log level <= 3
 :200ZQEcho! lev:10 Specify the log level instead of the default 14
 ```
 
-### Printing `s:`-vars
+### printing `s:`-vars
 
 To be able to pass script-variables to `ZQEcho` you'll need to provide a
 getter-function for your script's `s:`-dict, like so:
