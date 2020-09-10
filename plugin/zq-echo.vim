@@ -260,21 +260,30 @@ endfunc
 
 """""""""""""""""" HELPER FUNCTIONS {{{
 " FUNCTION: s:ZeroQuote_ZQEchoCmdImpl(hl,...) {{{
-function! s:ZeroQuote_ZQEchoCmdImpl(hl, bang, linenum, msg_bits)
+function! s:ZeroQuote_ZQEchoCmdImpl(hi, bang, linenum, msg_bits)
     " Presume a cmdline-window invocation and prepend the history-index instead.
-    if a:hl < 10 && empty(a:linenum)
+    if a:hi < 10 && empty(a:linenum)
         let line = "cmd:" . histnr("cmd")
     else
         let line = a:linenum
     endif
 
     " Establish log-level, specifically for an asynchroneous message.
-    if a:hl == 19 && a:msg_bits[0] =~ '^\d\+$'
+    if a:hi == 22 && a:msg_bits[0] =~ '^\d\+$'
         let msg_arr = a:msg_bits[1:]
         let hi = a:msg_bits[0]
     else
         let msg_arr = a:msg_bits
-        let hi = a:hl
+        let hi = a:hi
+    endif
+    " Log level can be given as the first argument, by e.g.: lev:5…
+    if a:hi > 25
+        if msg_arr[0] =~ '^lev:\d\+$'
+            let hi = remove(msg_arr,0)[4:]
+        else
+            " The standard user message level.
+            let hi = 14
+        endif
     endif
 
     " Prepend the line number if required…
@@ -283,7 +292,7 @@ function! s:ZeroQuote_ZQEchoCmdImpl(hl, bang, linenum, msg_bits)
 
     " Async-message?
     if(!empty(a:bang))
-        call s:ZeroQuote_Deploy_TimerTriggered_Message(extend([hi], msg_arr), 0)
+        call s:ZeroQuote_Deploy_TimerTriggered_Message(extend([hi], msg_arr), 0, a:hi > 25 ? a:hi : 10)
     else
         " Prepend the debug- [line-number] space-separated word if needed, i.e.:
         " if it's not a user-message (i.e.: if log-level/the-<count> < 10) AND
@@ -348,7 +357,7 @@ endfunc
 function! ZeroQuote_showDeferredMessageCallback(timer)
     call filter( s:zq_timers, 'v:val != a:timer' )
     let msg = remove(s:zq_deferredMessagesQueue, 0)
-    call s:ZeroQuote_ZQEchoCmdImpl(19, '', '', l:msg)
+    call s:ZeroQuote_ZQEchoCmdImpl(22, '', '', l:msg)
     redraw
 endfunc
 " }}}
