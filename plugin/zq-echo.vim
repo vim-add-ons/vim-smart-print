@@ -38,7 +38,7 @@
 "
 " Asynchroneous-printing:
 " -----------------------
-" :ZQEcho! I'll be printed from a timer-callback after 10 ms (default) 
+" :ZQEcho! I'll be printed from a timer-callback after 7 ms (default) 
 " :200ZQEcho! Set time-out to 200 ms ↔ counts > 25 aren't log-levels, but timeouts
 
 """""""""""""""""" THE SCRIPT BODY {{{
@@ -152,7 +152,7 @@ command! -nargs=1 ZQSetSDictFunc call s:ZeroQuote_AddSDictFor(expand("<sfile>"),
 
 " :Messages command.
 if exists(":Messages")
-    10ZQEcho! %1WARNING%-: A command %2 :Messages %- already existed. It has been %1overwritten%-…
+    700ZQEcho! lev:7 %1WARNING%-: A command %2 :Messages %- already existed. It has been %1overwritten%-…
 endif
 command! -nargs=? Messages call Messages(<q-args>)
 
@@ -178,14 +178,14 @@ function! s:ZeroQuote_ZQEcho(hl, ...)
     " The input…
     let args = copy(a:000[0])
 
-    " Strip the line-number argument for the user- (count>=10) messages.
+    " Strip the line-number argument for the user- (count>=7) messages.
     if a:hl >= 7 && type(args[0]) == v:t_string &&
                 \ args[0] =~ '\v^\s*(\%([0-9-]+\.=|[a-za-z0-9_-]*\.))=\s*\[\d*\]
                     \\s*(\%([0-9-]+\.=|[a-za-z0-9_-]*\.))=\s*$'
         let args = args[1:]
     endif
     " Normalize higlight/count.
-    let hl = a:hl >= 10 ? (a:hl-10) : a:hl
+    let hl = a:hl >= 7 ? (a:hl-7) : a:hl
 
     if !s:zq_MessagesCmd_state
         " Store the message in a custom history, accessible via :Messages
@@ -264,7 +264,7 @@ endfunc
 " FUNCTION: s:ZeroQuote_ZQEchoCmdImpl(hl,...) {{{
 function! s:ZeroQuote_ZQEchoCmdImpl(hi, bang, linenum, msg_bits)
     " Presume a cmdline-window invocation and prepend the history-index instead.
-    if a:hi < 10 && empty(a:linenum)
+    if a:hi < 7 && empty(a:linenum)
         let line = "cmd:" . histnr("cmd")
     else
         let line = a:linenum
@@ -282,23 +282,18 @@ function! s:ZeroQuote_ZQEchoCmdImpl(hi, bang, linenum, msg_bits)
     if a:hi > 25 && msg_arr[0] =~ '^lev:\d\+$'
         let hi = remove(msg_arr,0)[4:]
     elseif a:hi > 25
-        " The standard user message level.
-        let hi = 14
+        " The standard user message level — in the 4th color.
+        let hi = 11
     endif
 
     " Prepend the line number if required…
-    let msg_arr = ((hi<10 && !empty(line) && string(msg_arr[0]) !~# '\v^''\[(cmd:)=\d+\]''$') ?
+    let msg_arr = ((hi<7 && !empty(line) && string(msg_arr[0]) !~# '\v^''\[(cmd:)=\d+\]''$') ?
                 \ extend(["%4.[".line."]%".hi."."], msg_arr) : msg_arr)
 
     " Async-message?
     if(!empty(a:bang))
-        call s:ZeroQuote_Deploy_TimerTriggered_Message(extend([hi], msg_arr), 0, a:hi > 25 ? a:hi : 10)
+        call s:ZeroQuote_Deploy_TimerTriggered_Message(extend([hi], msg_arr), 0, a:hi > 25 ? a:hi : 7)
     else
-        " Prepend the debug- [line-number] space-separated word if needed, i.e.:
-        " if it's not a user-message (i.e.: if log-level/the-<count> < 10) AND
-        " if not already prepended (the call might be from various sources, like
-        " timeout-callback, so in general it isn't well known if the message is
-        " pre-processed or not).
         call s:ZeroQuote_ZQEcho(hi, msg_arr)
     endif
 endfunc
@@ -344,14 +339,13 @@ function! s:ZeroQuote_Deploy_TimerTriggered_Message(the_msg,...)
 
     if a:0 && a:1 >= 0
         call add(s:zq_deferredMessagesQueue, a:the_msg)
-        call add(s:zq_timers, timer_start(a:0 >= 2 ? a:2 : 10, function("ZeroQuote_showDeferredMessageCallback")))
+        call add(s:zq_timers, timer_start(a:0 >= 2 ? a:2 : 7, function("ZeroQuote_showDeferredMessageCallback")))
     else
         " A non-deploy theoretical-scenario, for niceness of the API.
         if type(a:the_msg) = v:t_list
-            "10ZQEcho a:the_msg
-            10ZQEcho <args>: a:the_msg
+            7ZQEcho <args>: a:the_msg
         else
-            10ZQEcho a:the_msg
+            7ZQEcho a:the_msg
         endif
     endif
 endfunc
@@ -373,7 +367,7 @@ function! s:ZeroQuote_DoPause(pause_value)
         return
     endif
     if s:ZeroQuote_pause_value =~ '\v^-=\d+$' && s:ZeroQuote_pause_value > 0
-        call s:ZeroQuote_PauseAllTimers(1, s:ZeroQuote_pause_value + 10)
+        call s:ZeroQuote_PauseAllTimers(1, s:ZeroQuote_pause_value + 3)
         exe "sleep" s:ZeroQuote_pause_value."m"
     endif
 endfunc
