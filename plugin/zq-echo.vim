@@ -467,7 +467,7 @@ function! s:ZeroQuote_evalArgs(args,l,a)
         elseif __start_idx >= 0
             if type(Arg__) == v:t_string && Arg__ =~# '\v^[^(].*\)$' && Arg__ !~ '\v\([^)]*\)$'
                 let __obj = substitute(join(__args[__start_idx:__idx]), 'a:\([a-zA-Z_-][a-zA-Z0-9_-]*\)','a:a.\1','g')
-                call add(__new_args,s:ZeroQuote_ExpandVars(eval(__obj)))
+                call add(__new_args,s:ZeroQuote_ExpandVars(eval(__obj),a:l,a:a))
                 let __start_idx = -1
                 continue
             endif
@@ -476,7 +476,7 @@ function! s:ZeroQuote_evalArgs(args,l,a)
         " …no multi-part token is being built…
         if __start_idx == -1
             " Compensate for explicit variable-expansion requests or {:ex commands…}, etc.
-            let Arg__ = s:ZeroQuote_ExpandVars(Arg__)
+            let Arg__ = s:ZeroQuote_ExpandVars(Arg__,a:l,a:a)
 
             if type(Arg__) == v:t_string && (!__already_evaluated[__idx] || Arg__ =~ '^function([^)]\+)$')
                 " A variable?
@@ -493,7 +493,7 @@ function! s:ZeroQuote_evalArgs(args,l,a)
 
             " Store/save the element, further checking for any {exprs} that need
             " expanding.
-            call add(__new_args, s:ZeroQuote_ExpandVars(Arg__))
+            call add(__new_args, s:ZeroQuote_ExpandVars(Arg__,a:l,a:a))
             " Increase the following-index…
             let __new_idx += 1
         endif
@@ -505,19 +505,20 @@ endfunc
 " }}}
 " FUNCTION: s:ZeroQuote_ExpandVars {{{
 " It expands all {:command …'s} and {[sgb]:user_variable's}.
-func! s:ZeroQuote_ExpandVars(text_or_texts)
+func! s:ZeroQuote_ExpandVars(text_or_texts,l,a)
     if type(a:text_or_texts) == v:t_list
         " List input.
         let texts=deepcopy(a:text_or_texts)
         let idx = 0
         for t in texts
-            let texts[idx] = s:ZeroQuote_ExpandVars(t)
+            let texts[idx] = s:ZeroQuote_ExpandVars(t,a:l,a:a)
             let idx += 1
         endfor
         let Res = texts
     elseif type(a:text_or_texts) == v:t_string
         " String input.
-        let Res = substitute(a:text_or_texts, '\v\{(([:=][^}]+|([svwtgb]\:|\&)[a-zA-Z_]
+        let Res = substitute(a:text_or_texts, '\([^a-zA-Z0-9_]\|\<\)a:\([a-zA-Z_-][a-zA-Z0-9_-]*\)','\1a:a.\2','g')
+        let Res = substitute(Res, '\v\{(([:=][^}]+|([svwtgba]\:|\&)[a-zA-Z_]
     \[a-zA-Z0-9._]*%(\[[^]]+\])*))\}',
     \ '\=((submatch(1)[0] == ":") ?
         \ ((submatch(1)[1] != ":") ? execute(submatch(1))[1:] : execute(submatch(1))[1:0])
