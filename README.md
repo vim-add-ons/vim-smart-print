@@ -14,6 +14,8 @@ expressions back into their special meaning, so it's the command's main
 feature. The result is an ability to freely express your thoughts — your
 fingers will feel freed!
 
+#### other features
+
 Besides the zero-quoting property, `ZQEcho` has some other, interesting
 features:
 
