@@ -18,10 +18,10 @@ Besides the zero-quoting property, `ZQEcho` has some other, interesting
 features:
 - ·**multi-color**· messages that overcome Vim limitation of only one highlight
 per-single message — with a custom message ·**history**·,
-- automatic, easy to activate (via the *•bang•* **`!`** appended to the
-  command, plus an optional *·count·* ↔ the timeout) ·**asynchroneous**·
-  display of the message via a ·*timer-based*· callback,
-- ability to ·*pause*· Vim for a specified number of seconds, so that the message
+- automatic, easy to activate (via the *·bang·*: **`!`** appended to the
+  command, plus an optional *·count·* ←→ the timeout) ·**asynchroneous**·
+  display of the message via a *·timer-based·* callback,
+- ability to *·pause·* Vim for a specified number of seconds, so that the message
   will not be missed or overwritten by some following message or a status change,
 - ability to embed variable-expanding strings in the text, in a form `{g:myvar…}`
   and also an `ex` command output-capture substituting via `{:ex-command(s)…}`.
