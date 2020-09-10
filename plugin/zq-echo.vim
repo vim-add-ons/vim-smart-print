@@ -43,22 +43,27 @@
 
 """""""""""""""""" THE SCRIPT BODY {{{
 
+" Variable initialization {{{
+" Initialize globals.
+" Retain previous messages ↔ allow reloading the plugin preserving the state.
+let g:zq_messages = exists("g:zq_messages") ? g:zq_messages : []
+" A global, common timer-list for pausing…
+let g:timers = exists("g:timers") ? g:timers : []
+
+" Session-variables initialization.
+" zq_-prefix is being used for easier completing.
+let s:zq_MessagesCmd_state = 0
+let s:zq_deferredMessagesQueue = []
+let s:zq_timers = g:timers
+let s:zq_s_dict_providers = exists("s:zq_s_dict_providers") ? s:zq_s_dict_providers : {}
+
 function! s:ZeroQuote_AddSDictFor(Ref)
     let l:the_sid = matchstr(string(a:Ref),'<SNR>\zs\d\+\ze_')
     "4ZQEcho FOR: ≈ %1Dict:%2. l:dict %3•°•%1 input-SID:%4 l:the_sid %3•°•%1 Own-SID:%2 expand('<SID>') •°•
     let s:zq_s_dict_providers[l:the_sid] = a:Ref
 endfunc
-
-" ZQEcho — echo-smart command.
-command! -nargs=+ -count=4 -bang -bar -complete=var ZQEcho call s:ZeroQuote_ZQEchoCmdImpl(<count>,<q-bang>,expand("<sflnum>"),
-            \ s:ZeroQuote_evalArgs([<f-args>],exists("l:")?(l:):{},exists("a:")?(a:):{}))
-
-command! -nargs=1 ZQSetSDictFunc call s:ZeroQuote_AddSDictFor(<args>)
-
-" Messages command.
-command! -nargs=? Messages call Messages(<q-args>)
-
-" Common highlight definitions.
+" }}}
+" Highlight groups… {{{
 hi! zq_norm ctermfg=7
 " Blue colors…
 hi! zq_blue ctermfg=27
@@ -129,19 +134,25 @@ hi! zq_bold cterm=bold
 
 hi! zq_bluemsg ctermfg=123 ctermbg=25 cterm=bold
 hi! zq_goldmsg ctermfg=35 ctermbg=220 cterm=bold
+" }}}
 
-" Initialize globals.
-" Retain previous messages ↔ allow reloading the plugin preserving the state.
-let g:zq_messages = exists("g:zq_messages") ? g:zq_messages : []
-" A global, common timer-list for pausing…
-let g:timers = exists("g:timers") ? g:timers : []
+" User-commands definitions {{{
+" :ZQEcho — the main command.
+command! -nargs=+ -count=4 -bang -bar -complete=var ZQEcho call s:ZeroQuote_ZQEchoCmdImpl(<count>,<q-bang>,expand("<sflnum>"),
+            \ s:ZeroQuote_evalArgs([<f-args>],exists("l:")?(l:):{},exists("a:")?(a:):{}))
 
-" Session-variables initialization.
-" zq_-prefix is being used for easier completing.
-let s:zq_MessagesCmd_state = 0
-let s:zq_deferredMessagesQueue = []
-let s:zq_timers = g:timers
-let s:zq_s_dict_providers = exists("s:zq_s_dict_providers") ? s:zq_s_dict_providers : {}
+" :ZQSetSDictFunc — an API to offer an s:-dict getter function.
+command! -nargs=1 ZQSetSDictFunc call s:ZeroQuote_AddSDictFor(<args>)
+
+" :Messages command.
+if exists(":Messages")
+    10ZQEcho! %1WARNING%-: A command %2 :Messages %- already existed. It has been %1overwritten%-…
+endif
+command! -nargs=? Messages call Messages(<q-args>)
+
+" Debugging command.
+"com! -nargs=* -complete=command ZQDebug <args>
+" }}}
 
 """""""""""""""""" THE END OF THE SCRIPT BODY }}}
 
@@ -242,7 +253,6 @@ function! s:ZeroQuote_ZQEcho(hl, ...)
     endif
 endfunc
 " }}}
-"
 """""""""""""""""" HELPER FUNCTIONS {{{
 " FUNCTION: s:ZeroQuote_ZQEchoCmdImpl(hl,...) {{{
 function! s:ZeroQuote_ZQEchoCmdImpl(hl, bang, linenum, msg_bits)
@@ -437,17 +447,17 @@ function! s:ZeroQuote_evalArgs(args,l,a)
     let __already_evaluated = []
     let __new_idx = 0
     for __idx in range(len(__args))
-        let __arg = __args[__idx]
+        let Arg__ = __args[__idx]
         " Unclosed paren?
         " Discriminate two special cases: (func() and (func(sub_func())
         if __start_idx == -1
-            if type(__arg) == v:t_string && __arg =~# '\v^\(.*([^)]|\([^)]*\)|\([^(]*\([^)]*\)[^)]*\))$'
+            if type(Arg__) == v:t_string && Arg__ =~# '\v^\(.*([^)]|\([^)]*\)|\([^(]*\([^)]*\)[^)]*\))$'
                 let __start_idx = __idx
             endif
         " A free, closing paren?
         elseif __start_idx >= 0
-            if type(__arg) == v:t_string && __arg =~# '\v^[^(].*\)$' && __arg !~ '\v\([^)]*\)$'
-                call add(__new_args,eval(join(__args[__start_idx:__idx])))
+            if type(Arg__) == v:t_string && Arg__ =~# '\v^[^(].*\)$' && Arg__ !~ '\v\([^)]*\)$'
+                call add(__new_args,s:ZeroQuote_ExpandVars(eval(join(__args[__start_idx:__idx]))))
                 call add(__already_evaluated, 1)
                 let __start_idx = -1
                 continue
@@ -457,21 +467,21 @@ function! s:ZeroQuote_evalArgs(args,l,a)
         " …no multi-part token is being built…
         if __start_idx == -1
             " Compensate for explicit variable-expansion requests or {:ex commands…}, etc.
-            let __arg = s:ZeroQuote_ExpandVars(__arg)
-            "echom __arg
+            let Arg__ = s:ZeroQuote_ExpandVars(Arg__)
+            "echom Arg__
 
-            if type(__arg) == v:t_string
+            if type(Arg__) == v:t_string
                 call add(__already_evaluated, 1)
 
                 " A variable?
-                if __arg =~# '\v^\s*[svwtgb]:[a-zA-Z_][a-zA-Z0-9._]*%(\[[^]]+\])*\s*$'
-                    let __arg = s:ZeroQuote_ExpandVars("{".__arg."}")
+                if Arg__ =~# '\v^\s*[svwtgb]:[a-zA-Z_][a-zA-Z0-9._]*%(\[[^]]+\])*\s*$'
+                    let Arg__ = s:ZeroQuote_ExpandVars("{".__arg."}")
                 " A function call or an expression wrapped in parens?
-                elseif __arg =~# '\v^\s*(([svwtgb]:)=[a-zA-Z_][a-zA-Z0-9_-]*)=\s*\(.*\)\s*$'
-                    let __arg = eval(__arg)
+                elseif Arg__ =~# '\v^\s*(([svwtgb]:)=[a-zA-Z_][a-zA-Z0-9_-]*)=\s*\(.*\)\s*$'
+                    let Arg__ = eval(Arg__)
                 " A \-quoted atom?
-                elseif __arg[0] == '\'
-                    let __arg = __arg[1:]
+                elseif Arg__[0] == '\'
+                    let Arg__ = Arg__[1:]
                 else
                     let __already_evaluated[__new_idx] = 0
                 endif
@@ -479,8 +489,9 @@ function! s:ZeroQuote_evalArgs(args,l,a)
                 call add(__already_evaluated, 0)
             endif
 
-            " Store/save the element.
-            call add(__new_args, __arg)
+            " Store/save the element, further checking for any {exprs} that need
+            " expanding.
+            call add(__new_args, s:ZeroQuote_ExpandVars(Arg__))
             " Increase the following-index…
             let __new_idx += 1
         endif
