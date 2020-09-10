@@ -261,7 +261,7 @@ endfunc
 " }}}
 
 """""""""""""""""" HELPER FUNCTIONS {{{
-" FUNCTION: s:ZeroQuote_ZQEchoCmdImpl(hl,...) {{{
+" FUNCTION: s:ZeroQuote_ZQEchoCmdImpl(hl, bang, linenum, msg_bits) {{{
 function! s:ZeroQuote_ZQEchoCmdImpl(hi, bang, linenum, msg_bits)
     " Presume a cmdline-window invocation and prepend the history-index instead.
     if a:hi < 7 && empty(a:linenum)
@@ -298,7 +298,7 @@ function! s:ZeroQuote_ZQEchoCmdImpl(hi, bang, linenum, msg_bits)
     endif
 endfunc
 " }}}
-" FUNCTION: s:ZeroQuote_TryExtendSDict {{{
+" FUNCTION: s:ZeroQuote_TryExtendSDict() {{{
 function! s:ZeroQuote_TryExtendSDict()
     let stack = expand("<stack>")
     for sid in keys(s:zq_s_dict_providers)
@@ -316,7 +316,7 @@ function! s:ZeroQuote_TryExtendSDict()
     return [0,0]
 endfunc
 " }}}
-" FUNCTION: s:ZeroQuote_TryRestoreSDict {{{
+" FUNCTION: s:ZeroQuote_TryRestoreSDict(is_needed,sid) {{{
 function! s:ZeroQuote_TryRestoreSDict(is_needed,sid)
     if a:is_needed
         let Ref = s:zq_s_dict_providers[a:sid][0]
@@ -378,7 +378,7 @@ function! s:ZeroQuote_redraw(timer)
     redraw
 endfunc
 " }}}
-" FUNCTION: s:ZeroQuote_PauseAllTimers() {{{
+" FUNCTION: s:ZeroQuote_PauseAllTimers(pause,time) {{{
 function! s:ZeroQuote_PauseAllTimers(pause,time)
     for t in s:zq_timers
         call timer_pause(t,a:pause)
@@ -390,7 +390,7 @@ function! s:ZeroQuote_PauseAllTimers(pause,time)
     endif
 endfunc
 " }}}
-" FUNCTION: s:ZeroQuote_UnPauseAllTimersCallback() {{{
+" FUNCTION: s:ZeroQuote_UnPauseAllTimersCallback(timer) {{{
 function! s:ZeroQuote_UnPauseAllTimersCallback(timer)
     call filter( s:zq_timers, 'v:val != a:timer' )
     for t in s:zq_timers
@@ -398,7 +398,7 @@ function! s:ZeroQuote_UnPauseAllTimersCallback(timer)
     endfor
 endfunc
 " }}}
-" FUNCTION: s:ZeroQuote_evalArgs() {{{
+" FUNCTION: s:ZeroQuote_evalArgs(args,l,a) {{{
 function! s:ZeroQuote_evalArgs(args,l,a)
     "echom "ENTRY —→ dict:l °" a:l "° —→ dict:a °" a:a "°"
     call extend(l:,a:l)
@@ -497,7 +497,7 @@ function! s:ZeroQuote_evalArgs(args,l,a)
     return __args
 endfunc
 " }}}
-" FUNCTION: s:ZeroQuote_ExpandVars {{{
+" FUNCTION: s:ZeroQuote_ExpandVars(text_or_texts,l,a) {{{
 " It expands all {:command …'s} and {[sgb]:user_variable's}.
 func! s:ZeroQuote_ExpandVars(text_or_texts,l,a)
     call extend(l:,a:l)
