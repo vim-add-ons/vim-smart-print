@@ -405,6 +405,7 @@ function! s:ZeroQuote_evalArgs(args,l,a)
     endif
 
     let __idx=-1
+    let __already_evaluated = []
     for __cur_arg in __args
         let __idx += 1
         " 1 — %firstcolor.
@@ -416,22 +417,15 @@ function! s:ZeroQuote_evalArgs(args,l,a)
         " Not a variable-expression? → return the original string…
         if empty(__mres) || __mres[3].__mres[4] !~ '^\(()\)\=$'
             "echom "Returning «original» for" __cur_arg
+            call add(__already_evaluated, 0)
             continue
         endif
-        " Separate-out the core-variable name and the __sign.
-        let __no_dict_arg = substitute(__mres[2], '^[(]\=\(-\=\)[svbwtgla]:\(.\{-}\)[)]\=$', '\1\2', '')
-        "echom __no_dict_arg "// 1"
-        let __sign = (__no_dict_arg =~ '^-.*') ? -1 : 1
-        if __sign < 0
-            let __no_dict_arg = __no_dict_arg[1:]
-        endif
-        "echom __no_dict_arg "// 2"
-        
-        " Fetch the __values — any variable-expression except for a:, where only
-        " a:simple_forms are allowed, e.g.: no a:complex[s:form]…
+        call add(__already_evaluated, 1)
+
         if __mres[2] =~ '^(\=-\=a:.*'
             let __mres[2] = substitute(__mres[2], 'a:\([a-zA-Z_-][a-zA-Z0-9_-]*\)','a:a.\1','g')
         endif
+        " Fetch the __values — any variable-expression…
         if exists(substitute(__mres[2], '\v(^\(=-=|\)=$)', "", "g"))
             "echom "From-eval path ↔" __no_dict_arg "↔" eval(__mres[2])
             " Via-eval path…
@@ -448,7 +442,6 @@ function! s:ZeroQuote_evalArgs(args,l,a)
     " Expand any variables and concatenate separated atoms wrapped in parens.
     let __start_idx = -1
     let __new_args = []
-    let __already_evaluated = []
     let __new_idx = 0
     for __idx in range(len(__args))
         let Arg__ = __args[__idx]
@@ -463,7 +456,6 @@ function! s:ZeroQuote_evalArgs(args,l,a)
             if type(Arg__) == v:t_string && Arg__ =~# '\v^[^(].*\)$' && Arg__ !~ '\v\([^)]*\)$'
                 let __obj = substitute(join(__args[__start_idx:__idx]), 'a:\([a-zA-Z_-][a-zA-Z0-9_-]*\)','a:a.\1','g')
                 call add(__new_args,s:ZeroQuote_ExpandVars(eval(__obj)))
-                call add(__already_evaluated, 1)
                 let __start_idx = -1
                 continue
             endif
@@ -473,26 +465,18 @@ function! s:ZeroQuote_evalArgs(args,l,a)
         if __start_idx == -1
             " Compensate for explicit variable-expansion requests or {:ex commands…}, etc.
             let Arg__ = s:ZeroQuote_ExpandVars(Arg__)
-            "echom Arg__
 
-            if type(Arg__) == v:t_string
-                call add(__already_evaluated, 1)
-
+            if type(Arg__) == v:t_string && !__already_evaluated[__idx]
                 " A variable?
                 if Arg__ =~# '\v^\s*[svwatgbl]:[a-zA-Z_][a-zA-Z0-9._]*%(\[[^]]+\])*\s*$'
                     let Arg__ = eval(substitute(Arg__, 'a:\([a-zA-Z_-][a-zA-Z0-9_-]*\)','a:a.\1','g'))
-("{" . Arg__ . "}")
                 " A function call or an expression wrapped in parens?
                 elseif Arg__ =~# '\v^\s*(([svwatgbl]:)=[a-zA-Z_][a-zA-Z0-9_-]*)=\s*\(.*\)\s*$'
                     let Arg__ = eval(substitute(Arg__, 'a:\([a-zA-Z_-][a-zA-Z0-9_-]*\)','a:a.\1','g'))
                 " A \-quoted atom?
                 elseif Arg__[0] == '\'
                     let Arg__ = Arg__[1:]
-                else
-                    let __already_evaluated[__new_idx] = 0
                 endif
-            else
-                call add(__already_evaluated, 0)
             endif
 
             " Store/save the element, further checking for any {exprs} that need
