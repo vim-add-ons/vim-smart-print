@@ -6,12 +6,12 @@ arguments — it'll by itself:
 - differentiate them from the surrounding, regular text,
 - and then expand constructing the final message.
 
-*"But :echom also 'expands' variables… by design…"* you'll maybe think. That's
-true, `ZQEcho` works somewhat in a «*reversed*» way — it doesn't require to
-quote regular text (unlike `echom`) ←—→ THIS IS THE CANDY — and from this point
-it takes actions to elevate variables and expressions back into their special
-meaning. The result is an ability to freely express your thoughts — your
-fingers will feel freed!
+*"But :echom also 'expands' variables… by design…"* — you'll maybe think.
+That's true, `ZQEcho` works somewhat in a «*reversed*» way for increased
+convenience — it doesn't require to quote regular text (unlike `echom`) ←→ THIS
+IS THE CANDY — and from this point it takes actions to elevate variables and
+expressions back into their special meaning. The result is an ability to freely
+express your thoughts — your fingers will feel freed!
 
 Besides the zero-quoting property, `ZQEcho` has some other, interesting
 features:
