@@ -430,14 +430,9 @@ function! s:ZeroQuote_evalArgs(args,l,a)
         " Fetch the __values — any variable-expression except for a:, where only
         " a:simple_forms are allowed, e.g.: no a:complex[s:form]…
         if __mres[2] =~ '^(\=-\=a:.*'
-            "echom "From-dict path ↔" __no_dict_arg "—→" get(a:a, __no_dict_arg, "<no-such-key>")
-            if has_key(a:a, __no_dict_arg)
-                let ValueForFRef = get(a:a, __no_dict_arg, "STRANGE-ERROR…")
-                if type(ValueForFRef) != v:t_string | let ValueForFRef = string(ValueForFRef) | endif
-                let ValueForFRef = __sign < 0 ? -1*ValueForFRef : ValueForFRef
-                let __args[__idx] = __mres[1] . ValueForFRef . __mres[5]
-            endif
-        elseif exists(substitute(__mres[2], '\v(^\(=-=|\)=$)', "", "g"))
+            let __mres[2] = substitute(__mres[2], 'a:\([a-zA-Z_-][a-zA-Z0-9_-]*\)','a:a.\1','g')
+        endif
+        if exists(substitute(__mres[2], '\v(^\(=-=|\)=$)', "", "g"))
             "echom "From-eval path ↔" __no_dict_arg "↔" eval(__mres[2])
             " Via-eval path…
             let ValueForFRef = eval(__mres[2])
@@ -466,7 +461,8 @@ function! s:ZeroQuote_evalArgs(args,l,a)
         " A free, closing paren?
         elseif __start_idx >= 0
             if type(Arg__) == v:t_string && Arg__ =~# '\v^[^(].*\)$' && Arg__ !~ '\v\([^)]*\)$'
-                call add(__new_args,s:ZeroQuote_ExpandVars(eval(join(__args[__start_idx:__idx]))))
+                let __obj = substitute(join(__args[__start_idx:__idx]), 'a:\([a-zA-Z_-][a-zA-Z0-9_-]*\)','a:a.\1','g')
+                call add(__new_args,s:ZeroQuote_ExpandVars(eval(__obj)))
                 call add(__already_evaluated, 1)
                 let __start_idx = -1
                 continue
@@ -483,11 +479,12 @@ function! s:ZeroQuote_evalArgs(args,l,a)
                 call add(__already_evaluated, 1)
 
                 " A variable?
-                if Arg__ =~# '\v^\s*[svwtgb]:[a-zA-Z_][a-zA-Z0-9._]*%(\[[^]]+\])*\s*$'
-                    let Arg__ = s:ZeroQuote_ExpandVars("{" . Arg__ . "}")
+                if Arg__ =~# '\v^\s*[svwatgbl]:[a-zA-Z_][a-zA-Z0-9._]*%(\[[^]]+\])*\s*$'
+                    let Arg__ = eval(substitute(Arg__, 'a:\([a-zA-Z_-][a-zA-Z0-9_-]*\)','a:a.\1','g'))
+("{" . Arg__ . "}")
                 " A function call or an expression wrapped in parens?
-                elseif Arg__ =~# '\v^\s*(([svwtgb]:)=[a-zA-Z_][a-zA-Z0-9_-]*)=\s*\(.*\)\s*$'
-                    let Arg__ = eval(Arg__)
+                elseif Arg__ =~# '\v^\s*(([svwatgbl]:)=[a-zA-Z_][a-zA-Z0-9_-]*)=\s*\(.*\)\s*$'
+                    let Arg__ = eval(substitute(Arg__, 'a:\([a-zA-Z_-][a-zA-Z0-9_-]*\)','a:a.\1','g'))
                 " A \-quoted atom?
                 elseif Arg__[0] == '\'
                     let Arg__ = Arg__[1:]
