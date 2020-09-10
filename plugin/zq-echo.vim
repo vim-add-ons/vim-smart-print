@@ -56,12 +56,6 @@ let s:zq_MessagesCmd_state = 0
 let s:zq_deferredMessagesQueue = []
 let s:zq_timers = g:timers
 let s:zq_s_dict_providers = exists("s:zq_s_dict_providers") ? s:zq_s_dict_providers : {}
-
-function! s:ZeroQuote_AddSDictFor(Ref)
-    let l:the_sid = matchstr(string(a:Ref),'<SNR>\zs\d\+\ze_')
-    "4ZQEcho FOR: ≈ %1Dict:%2. l:dict %3•°•%1 input-SID:%4 l:the_sid %3•°•%1 Own-SID:%2 expand('<SID>') •°•
-    let s:zq_s_dict_providers[l:the_sid] = a:Ref
-endfunc
 " }}}
 " Highlight groups… {{{
 hi! zq_norm ctermfg=7
@@ -134,6 +128,16 @@ hi! zq_bold cterm=bold
 
 hi! zq_bluemsg ctermfg=123 ctermbg=25 cterm=bold
 hi! zq_goldmsg ctermfg=35 ctermbg=220 cterm=bold
+" }}}
+
+" FUNCTION: s:ZeroQuote_AddSDictFor(Ref) {{{
+" Remembers the given s:-dict provider-function (a getter) reference in internal
+" structures.
+function! s:ZeroQuote_AddSDictFor(Ref)
+    let l:the_sid = matchstr(string(a:Ref),'<SNR>\zs\d\+\ze_')
+    5ZQEcho! %8 s:-dict offered ≈ %4 a:Ref %8 ≈ %3 •°• %8 input-SID:%2. l:the_sid %3 •°• %8 Own-SID: %2 expand('<SID>') %3•°•
+    let s:zq_s_dict_providers[l:the_sid] = a:Ref
+endfunc
 " }}}
 
 " User-commands definitions {{{
@@ -253,6 +257,7 @@ function! s:ZeroQuote_ZQEcho(hl, ...)
     endif
 endfunc
 " }}}
+
 """""""""""""""""" HELPER FUNCTIONS {{{
 " FUNCTION: s:ZeroQuote_ZQEchoCmdImpl(hl,...) {{{
 function! s:ZeroQuote_ZQEchoCmdImpl(hl, bang, linenum, msg_bits)
@@ -278,7 +283,7 @@ function! s:ZeroQuote_ZQEchoCmdImpl(hl, bang, linenum, msg_bits)
 
     " Async-message?
     if(!empty(a:bang))
-        call s:ZeroQuote_DeployDeferred_TimerTriggered_Message(extend([hi], msg_arr), 0)
+        call s:ZeroQuote_Deploy_TimerTriggered_Message(extend([hi], msg_arr), 0)
     else
         " Prepend the debug- [line-number] space-separated word if needed, i.e.:
         " if it's not a user-message (i.e.: if log-level/the-<count> < 10) AND
@@ -289,6 +294,7 @@ function! s:ZeroQuote_ZQEchoCmdImpl(hl, bang, linenum, msg_bits)
     endif
 endfunc
 " }}}
+" FUNCTION: s:ZeroQuote_TryExtendSDict {{{
 function! s:ZeroQuote_TryExtendSDict()
     let stack = expand("<stack>")
     for sid in keys(s:zq_s_dict_providers)
@@ -303,6 +309,8 @@ function! s:ZeroQuote_TryExtendSDict()
     "echom "NO for ——→" stack
     return [0,0]
 endfunc
+" }}}
+" FUNCTION: s:ZeroQuote_TryRestoreSDict {{{
 function! s:ZeroQuote_TryRestoreSDict(is_needed,sid)
     if a:is_needed
         let Ref = s:zq_s_dict_providers[a:sid]
@@ -313,8 +321,9 @@ function! s:ZeroQuote_TryRestoreSDict(is_needed,sid)
         let g:sdict_bkp = {}
     endif
 endfunc
-" FUNCTION: s:ZeroQuote_DeployDeferred_TimerTriggered_Message(the_msg) {{{
-function! s:ZeroQuote_DeployDeferred_TimerTriggered_Message(the_msg,...)
+" }}}
+" FUNCTION: s:ZeroQuote_Deploy_TimerTriggered_Message(the_msg) {{{
+function! s:ZeroQuote_Deploy_TimerTriggered_Message(the_msg,...)
     " Force-reset of the already deployed/deferred messages?
     " Done on the double-bang, i.e.: ZQEcho!! …
     if a:0 && a:1 > 0
@@ -571,6 +580,5 @@ function! Messages(arg=v:none)
 endfunc
 " }}}
 """""""""""""""""" THE END OF THE UTILITY FUNCTIONS }}}
-
 
 " vim:set ft=vim tw=80 foldmethod=marker sw=4 sts=4 et:
