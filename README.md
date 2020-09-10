@@ -63,3 +63,8 @@ let g:zq_echo_log_level = 3 " Show only messages of log level <= 3
 :ZQEcho! I'll be printed from a timer-·callback· after 10 ms (the default timeout)
 :200ZQEcho! Set timeout to 200 ms ↔ ·counts· > 25 are custom timeouts, not log-levels
 ```
+
+### Screenshot
+
+![screenshot](https://raw.githubusercontent.com/vim-add-ons/zq-echo/master/img/history.png)
+
