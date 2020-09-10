@@ -10,8 +10,9 @@ arguments — it'll by itself:
 That's true, `ZQEcho` works somewhat in a «*reversed*» way for increased
 convenience — it doesn't require to quote regular text (unlike `echom`) ←→ THIS
 IS THE CANDY — and from this point it takes actions to elevate variables and
-expressions back into their special meaning. The result is an ability to freely
-express your thoughts — your fingers will feel freed!
+expressions back into their special meaning, so it's the command's main
+feature. The result is an ability to freely express your thoughts — your
+fingers will feel freed!
 
 Besides the zero-quoting property, `ZQEcho` has some other, interesting
 features:
