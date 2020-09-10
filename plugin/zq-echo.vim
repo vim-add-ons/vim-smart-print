@@ -2,8 +2,8 @@
 " Copyright (c) 2020 « Sebastian Gniazdowski ».
 " License: « Gnu GPL v3 ».
 "
-" A :ZQEcho command that requires literally °ZERO° quoting of its input — it'll
-" by itself detect any variables and expressions, differentiate them from
+" An `:echo`-like command that requires literally °ZERO° quoting of its input —
+" it'll by itself detect any variables and expressions, differentiate them from
 " regular text and then expand constructing the final message. "But :echom also
 " 'expands' variables, by design" you'll maybe think. That's true, ZQEcho works
 " somewhat in a «reversed» way — it doesn't require to quote regular text
