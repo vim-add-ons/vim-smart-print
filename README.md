@@ -64,7 +64,27 @@ let g:zq_echo_log_level = 3 " Show only messages of log level <= 3
 ```
 :ZQEcho! I'll be printed from a timer-·callback· after 10 ms (the default timeout)
 :200ZQEcho! Set timeout to 200 ms ↔ ·counts· > 25 are custom timeouts, not log-levels
+:200ZQEcho! lev:10 Specify the log level instead of the default 14
 ```
+
+### Printing `s:`-vars
+
+To be able to pass script-variables to `ZQEcho` you'll need to provide a
+getter-function for your script's `s:`-dict, like so:
+
+```vim
+function! s:MyPlugin_GetSDict()
+    return s:
+endfunct
+    
+let Ref = function("s:MyPlugin_GetSDict")
+ZQSetSDictFunc Ref
+```
+
+Also, the `s:`-variables will be available only, if `ZQEcho` will be called
+(directly or indirectly) from a script-local function, i.e.: e.g.:
+`s:myFunction()`. Printing the vars from `s:`-unprefixed functions will not
+work.
 
 ### Screenshot
 
