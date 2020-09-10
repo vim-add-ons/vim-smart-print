@@ -20,7 +20,7 @@ Besides the zero-quoting property, `ZQEcho` has some other, interesting
 features:
 
 - ·**multi-color**· messages that overcome `:echom` limitation of only one
-  highlight per-single message — with a custom message ·**history**·,
+  highlight per-single message — with a custom message ·**history**· (`:Messages`),
 - automatic, easy to activate ·**asynchroneous**· display of the message via a
   *·timer-based·* callback — by using the *·bang·* /`!` appended after the
   command, plus an optional *·count·* &nbsp;←→&nbsp; the timeout,
