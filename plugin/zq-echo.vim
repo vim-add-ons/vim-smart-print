@@ -136,8 +136,9 @@ hi! zq_goldmsg ctermfg=35 ctermbg=220 cterm=bold
 " structures.
 function! s:ZeroQuote_AddSDictFor(sfile,Ref)
     let l:the_sid = matchstr(string(a:Ref),'<SNR>\zs\d\+\ze_')
+    let l:the_sfile = (a:sfile =~ 'function ') ? "" : a:sfile
     1000ZQEcho! p:0.5:%8 s:-dict offered ≈ %4 a:Ref %8 ≈ %3 •°• %8 in-SID:%2. l:the_sid %3 •°• %8 Own-SID: %2 expand('<SID>') %3•°•
-    let s:zq_s_dict_providers[l:the_sid] = [ a:Ref, a:sfile ]
+    let s:zq_s_dict_providers[l:the_sid] = [ a:Ref, l:the_sfile ]
 endfunc
 " }}}
 
