@@ -339,7 +339,7 @@ function! s:ZeroQuote_Deploy_TimerTriggered_Message(the_msg,...)
 
     if a:0 && a:1 >= 0
         call add(s:zq_deferredMessagesQueue, a:the_msg)
-        call add(s:zq_timers, timer_start(a:0 >= 2 ? a:2 : 7, function("ZeroQuote_showDeferredMessageCallback")))
+        call add(s:zq_timers, timer_start(a:0 >= 2 ? a:2 : 7, function("s:ZeroQuote_showDeferredMessageCallback")))
     else
         " A non-deploy theoretical-scenario, for niceness of the API.
         if type(a:the_msg) == v:t_list
@@ -350,8 +350,8 @@ function! s:ZeroQuote_Deploy_TimerTriggered_Message(the_msg,...)
     endif
 endfunc
 " }}}
-" FUNCTION: ZeroQuote_showDeferredMessageCallback(timer) {{{
-function! ZeroQuote_showDeferredMessageCallback(timer)
+" FUNCTION: s:ZeroQuote_showDeferredMessageCallback(timer) {{{
+function! s:ZeroQuote_showDeferredMessageCallback(timer)
     call filter( s:zq_timers, 'v:val != a:timer' )
     let msg = remove(s:zq_deferredMessagesQueue, 0)
     call s:ZeroQuote_ZQEchoCmdImpl(22, '', '', l:msg)
