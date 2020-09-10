@@ -154,7 +154,7 @@ command! -nargs=1 ZQSetSDictFunc call s:ZeroQuote_AddSDictFor(expand("<sfile>"),
 if exists(":Messages")
     700ZQEcho! lev:7 %1WARNING%-: A command %2 :Messages %- already existed. It has been %1overwritten%-…
 endif
-command! -nargs=? Messages call Messages(<q-args>)
+command! -nargs=? Messages call ZQMessages(<q-args>)
 
 " Debugging command.
 com! -nargs=* -complete=command ZQDebug <args>
@@ -555,8 +555,8 @@ endfunc
 """""""""""""""""" THE END OF THE HELPER FUNCTIONS }}}
 
 """""""""""""""""" UTILITY FUNCTIONS {{{
-" FUNCTION: Messages(arg=v:none) {{{
-function! Messages(arg=v:none)
+" FUNCTION: ZQMessages(arg=v:none) {{{
+function! ZQMessages(arg=v:none)
     if a:arg == "clear"
         let g:zq_messages = []
         return
