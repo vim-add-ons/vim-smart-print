@@ -21,7 +21,7 @@ features:
   highlight per-single message — with a custom message ·**history**·,
 - automatic, easy to activate ·**asynchroneous**· display of the message via a
   *·timer-based·* callback — by using the *·bang·* /`!` appended after the
-  command, plus an optional *·count·* ←→ the timeout,
+  command, plus an optional *·count·* &nbsp;←→&nbsp; the timeout,
 - ability to *·pause·* Vim for a specified number of seconds, so that the
   message will not be missed or overwritten by some following message or a
   status change — by prepending `p:{SECS}:…` to the message,
@@ -38,7 +38,7 @@ features:
 let g:zq_echo_log_level = 3 " Show only messages of log level <= 3
 
 :ZQEcho Hello World! You can use any Unicode glyph without quoting: ≈ß•°×∞„”
-:2ZQEcho Prepend with a count ↔ a message log-level AND also a distinct color
+:2ZQEcho Prepend with a ·count· ↔ a message log-level AND also a distinct color
 :ZQEcho %1 Red %2 Green %3 Yellow %4 Blue %5 Magenta %6 Cyan %7 White %0 Error %- Reset
 :ZQEcho Above is the short-color format. The long one allows to specify any
       \ hl-group: %Identifier Hello %Constant world!
