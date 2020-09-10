@@ -514,20 +514,20 @@ func! s:ZeroQuote_ExpandVars(text_or_texts)
             let texts[idx] = s:ZeroQuote_ExpandVars(t)
             let idx += 1
         endfor
-        return texts
+        let Res = texts
     elseif type(a:text_or_texts) == v:t_string
         " String input.
-        return substitute(a:text_or_texts, '\v\{((:[^}]+|([svwtgb]\:|\&)[a-zA-Z_]
-                        \[a-zA-Z0-9._]*%(\[[^]]+\])*))\}',
-                        \ '\=((submatch(1)[0] == ":") ?
-                        \ ((submatch(1)[1] == ":") ?
-                        \ execute(submatch(1))[1:] :
-                            \ execute(submatch(1))[1:0]) :
-                                \ (exists(submatch(1)) ?
-                                \ eval(submatch(1)) : submatch(1)))', 'g')
+        let Res = substitute(a:text_or_texts, '\v\{(([:=][^}]+|([svwtgb]\:|\&)[a-zA-Z_]
+    \[a-zA-Z0-9._]*%(\[[^]]+\])*))\}',
+    \ '\=((submatch(1)[0] == ":") ?
+        \ ((submatch(1)[1] != ":") ? execute(submatch(1))[1:] : execute(submatch(1))[1:0])
+                \ : ( (submatch(1)[0] == "=") ?
+                    \ eval(submatch(1)[1:])
+                        \ : (exists(submatch(1)) ? eval(submatch(1)) : submatch(1)) ))', 'g')
     else
-        return a:text_or_texts
+        let Res = a:text_or_texts
     endif
+    return Res
 endfunc
 " }}}
 " FUNCTION: s:ZeroQuote_GetPrefixValue(pfx, msg) {{{
