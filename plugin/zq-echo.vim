@@ -342,8 +342,8 @@ function! s:ZeroQuote_Deploy_TimerTriggered_Message(the_msg,...)
         call add(s:zq_timers, timer_start(a:0 >= 2 ? a:2 : 7, function("ZeroQuote_showDeferredMessageCallback")))
     else
         " A non-deploy theoretical-scenario, for niceness of the API.
-        if type(a:the_msg) = v:t_list
-            7ZQEcho <args>: a:the_msg
+        if type(a:the_msg) == v:t_list
+            7ZQEcho <zq—args>: a:the_msg
         else
             7ZQEcho a:the_msg
         endif
@@ -404,8 +404,8 @@ function! s:ZeroQuote_evalArgs(args,l,a)
     call extend(l:,a:l)
     let [__sdict_extended,__sid] = s:ZeroQuote_TryExtendSDict()
     "echom "EXTENDED:" s:
-    if a:args[0] == '<args>:'
-        let __args = deepcopy(a:args[1])
+    if a:args[0] == '<zq—args>:'
+        let __args = deepcopy(eval(substitute(a:args[1],"a:","a:a.","")))
     else
         let __args = deepcopy(a:args)
     endif
