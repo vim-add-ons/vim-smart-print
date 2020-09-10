@@ -277,13 +277,11 @@ function! s:ZeroQuote_ZQEchoCmdImpl(hi, bang, linenum, msg_bits)
         let hi = a:hi
     endif
     " Log level can be given as the first argument, by e.g.: lev:5…
-    if a:hi > 25
-        if msg_arr[0] =~ '^lev:\d\+$'
-            let hi = remove(msg_arr,0)[4:]
-        else
-            " The standard user message level.
-            let hi = 14
-        endif
+    if a:hi > 25 && msg_arr[0] =~ '^lev:\d\+$'
+        let hi = remove(msg_arr,0)[4:]
+    elseif a:hi > 25
+        " The standard user message level.
+        let hi = 14
     endif
 
     " Prepend the line number if required…
