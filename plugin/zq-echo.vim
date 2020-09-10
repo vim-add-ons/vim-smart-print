@@ -484,7 +484,7 @@ function! s:ZeroQuote_evalArgs(args,l,a)
 
                 " A variable?
                 if Arg__ =~# '\v^\s*[svwtgb]:[a-zA-Z_][a-zA-Z0-9._]*%(\[[^]]+\])*\s*$'
-                    let Arg__ = s:ZeroQuote_ExpandVars("{".__arg."}")
+                    let Arg__ = s:ZeroQuote_ExpandVars("{" . Arg__ . "}")
                 " A function call or an expression wrapped in parens?
                 elseif Arg__ =~# '\v^\s*(([svwtgb]:)=[a-zA-Z_][a-zA-Z0-9_-]*)=\s*\(.*\)\s*$'
                     let Arg__ = eval(Arg__)
