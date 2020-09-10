@@ -6,7 +6,7 @@ arguments — it'll by itself:
 - differentiate them from the surrounding, regular text,
 - and then expand constructing the final message.
 
-"But :echom also 'expands' variables… by design…"* you'll maybe think. That's
+*"But :echom also 'expands' variables… by design…"* you'll maybe think. That's
 true, `ZQEcho` works somewhat in a «*reversed*» way — it doesn't require to
 quote regular text (unlike `echom`) ←—→ THIS IS THE CANDY — and from this point
 it takes actions to elevate variables and expressions back into their special
