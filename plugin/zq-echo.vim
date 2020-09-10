@@ -14,7 +14,10 @@
 " — «multi-color» messages with a custom-message «history»,
 " — automatic, easy to activate (ZQEcho! … — simply append the bang +optional
 "   count ↔ the timeout) «asynchroneous» display of the message via a
-"   «timer-based» callback.
+"   «timer-based» callback,
+" - ability to «pause» Vim for a specified number of seconds, so that the
+"   message will not be missed or overwritten by some following message or a
+"   status change.
 "
 " Examples:
 " ---------
