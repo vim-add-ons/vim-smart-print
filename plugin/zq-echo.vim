@@ -1,4 +1,4 @@
-" ·•« Zero-Quote Echo Vim Plugin »•·   ·•« vim-add-ons/zq-echo »•·
+" •° Zero-Quote Echo Vim Plugin °•   •° vim-add-ons/zq-echo °•
 " Copyright (c) 2020 « Sebastian Gniazdowski ».
 " License: « Gnu GPL v3 ».
 "
