@@ -46,16 +46,17 @@
 " Variable initialization {{{
 " Initialize globals.
 " Retain previous messages ↔ allow reloading the plugin preserving the state.
-let g:zq_messages = exists("g:zq_messages") ? g:zq_messages : []
+let g:zq_messages = get(g:, 'zq_messages', [])
 " A global, common timer-list for pausing…
-let g:timers = exists("g:timers") ? g:timers : []
+let g:timers = get(g:, 'timers', [])
 
 " Session-variables initialization.
 " zq_-prefix is being used for easier completing.
 let s:zq_MessagesCmd_state = 0
-let s:zq_deferredMessagesQueue = []
+let s:zq_deferredMessagesQueue = get(s:, 'zq_deferredMessagesQueue', [])
 let s:zq_timers = g:timers
-let s:zq_s_dict_providers = exists("s:zq_s_dict_providers") ? s:zq_s_dict_providers : {}
+let s:zq_s_dict_providers = get(s:, 'zq_s_dict_providers', {})
+let s:zq_loaded_s_dicts = get(s:, 'zq_loaded_s_dicts', [])
 " }}}
 " Highlight groups… {{{
 hi! zq_norm ctermfg=7
@@ -130,13 +131,13 @@ hi! zq_bluemsg ctermfg=123 ctermbg=25 cterm=bold
 hi! zq_goldmsg ctermfg=35 ctermbg=220 cterm=bold
 " }}}
 
-" FUNCTION: s:ZeroQuote_AddSDictFor(Ref) {{{
+" FUNCTION: s:ZeroQuote_AddSDictFor(sfile,Ref) {{{
 " Remembers the given s:-dict provider-function (a getter) reference in internal
 " structures.
-function! s:ZeroQuote_AddSDictFor(Ref)
+function! s:ZeroQuote_AddSDictFor(sfile,Ref)
     let l:the_sid = matchstr(string(a:Ref),'<SNR>\zs\d\+\ze_')
     1000ZQEcho! p:0.5:%8 s:-dict offered ≈ %4 a:Ref %8 ≈ %3 •°• %8 in-SID:%2. l:the_sid %3 •°• %8 Own-SID: %2 expand('<SID>') %3•°•
-    let s:zq_s_dict_providers[l:the_sid] = a:Ref
+    let s:zq_s_dict_providers[l:the_sid] = [ a:Ref, a:sfile ]
 endfunc
 " }}}
 
@@ -146,7 +147,7 @@ command! -nargs=+ -count=4 -bang -bar -complete=var ZQEcho call s:ZeroQuote_ZQEc
             \ s:ZeroQuote_evalArgs([<f-args>],exists("l:")?(l:):{},exists("a:")?(a:):{}))
 
 " :ZQSetSDictFunc — an API to offer an s:-dict getter function.
-command! -nargs=1 ZQSetSDictFunc call s:ZeroQuote_AddSDictFor(<args>)
+command! -nargs=1 ZQSetSDictFunc call s:ZeroQuote_AddSDictFor(expand("<sfile>"),<args>)
 
 " :Messages command.
 if exists(":Messages")
@@ -155,7 +156,7 @@ endif
 command! -nargs=? Messages call Messages(<q-args>)
 
 " Debugging command.
-"com! -nargs=* -complete=command ZQDebug <args>
+com! -nargs=* -complete=command ZQDebug <args>
 " }}}
 
 """""""""""""""""" THE END OF THE SCRIPT BODY }}}
@@ -305,9 +306,11 @@ endfunc
 function! s:ZeroQuote_TryExtendSDict()
     let stack = expand("<stack>")
     for sid in keys(s:zq_s_dict_providers)
-        let Ref = s:zq_s_dict_providers[sid]
-        if !empty(matchstr(stack,'<SNR>\zs'.sid.'\ze_'))
-            "echom 'yes for:' sid "←—→" stack "←—→" Ref()
+        let Ref = s:zq_s_dict_providers[sid][0]
+        let script_file = s:zq_s_dict_providers[sid][1]
+        if !empty(matchstr(stack,'<SNR>\zs'.sid.'\ze_')) && index(s:zq_loaded_s_dicts, sid) < 0
+            call add(s:zq_loaded_s_dicts, sid)
+            6ZQEcho %4 Extending s:-dict with dict from: %2 ° %9 fnamemodify(l:script_file.'%2.',':t') °
             let g:sdict_bkp = deepcopy(s:)
             call extend(s:,Ref())
             return [1,sid]
@@ -320,12 +323,13 @@ endfunc
 " FUNCTION: s:ZeroQuote_TryRestoreSDict {{{
 function! s:ZeroQuote_TryRestoreSDict(is_needed,sid)
     if a:is_needed
-        let Ref = s:zq_s_dict_providers[a:sid]
+        let Ref = s:zq_s_dict_providers[a:sid][0]
         for __key in keys(Ref())
             call remove(s:, __key)
         endfor
         call extend(s:, g:sdict_bkp)
         let g:sdict_bkp = {}
+        call filter(s:zq_loaded_s_dicts, 'v:val != a:sid')
     endif
 endfunc
 " }}}
