@@ -19,7 +19,7 @@ features:
 - ·**multi-color**· messages that overcome Vim limitation of only one highlight
 per-single message — with a custom message ·**history**·,
 - automatic, easy to activate (via the *•bang•* **`!`** appended to the
-  command, plus an optional •*count*• ↔ the timeout) ·**asynchroneous**·
+  command, plus an optional *·count·* ↔ the timeout) ·**asynchroneous**·
   display of the message via a ·*timer-based*· callback,
 - ability to ·*pause*· Vim for a specified number of seconds, so that the message
   will not be missed or overwritten by some following message or a status change,
