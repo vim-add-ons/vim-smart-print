@@ -57,38 +57,72 @@ command! -nargs=? Messages call Messages(<q-args>)
 
 " Common highlight definitions.
 hi! zq_norm ctermfg=7
+" Blue colors…
 hi! zq_blue ctermfg=27
-hi! zq_blue1 ctermfg=32
-hi! zq_blue2 ctermfg=75
+hi! zq_blue2 ctermfg=32
+hi! zq_blue3 ctermfg=75
 hi! zq_lblue ctermfg=50
-hi! zq_lblue2 ctermfg=75 cterm=bold
-hi! zq_lblue3 ctermfg=153 cterm=bold
-hi! zq_bluemsg ctermfg=123 ctermbg=25 cterm=bold
+hi! zq_lblue2 ctermfg=75
+hi! zq_lblue3 ctermfg=153
+" Blue colors with bold…
+hi! zq_bblue ctermfg=27    cterm=bold
+hi! zq_bblue2 ctermfg=32   cterm=bold
+hi! zq_bblue3 ctermfg=75   cterm=bold
+hi! zq_lbblue ctermfg=50   cterm=bold
+hi! zq_lbblue2 ctermfg=75  cterm=bold
+hi! zq_lbblue3 ctermfg=153 cterm=bold
+" yellow colors
 hi! zq_gold ctermfg=220
-hi! zq_yellow ctermfg=190
-hi! zq_lyellow ctermfg=yellow cterm=bold
-hi! zq_lyellow2 ctermfg=221
-hi! zq_lyellow3 ctermfg=226
-hi! zq_orange3 ctermfg=172
-hi! zq_orange4 ctermfg=94
+hi! zq_yellow ctermfg=184
+hi! zq_yellow2 ctermfg=226
+hi! zq_yellow3 ctermfg=221
+hi! zq_yellow4 ctermfg=190
+" yellow colors with bold
+hi! zq_bgold ctermfg=220    cterm=bold
+hi! zq_byellow ctermfg=184  cterm=bold
+hi! zq_byellow2 ctermfg=226 cterm=bold
+hi! zq_byellow3 ctermfg=221 cterm=bold
+hi! zq_byellow4 ctermfg=190 cterm=bold
+hi! zq_orange ctermfg=94
+hi! zq_orange2 ctermfg=172
+" Green colors…
 hi! zq_green ctermfg=green
 hi! zq_green2 ctermfg=35
 hi! zq_green3 ctermfg=40
 hi! zq_green4 ctermfg=82
+" Green colors + bold…
 hi! zq_bgreen ctermfg=green cterm=bold
-hi! zq_bgreen2 ctermfg=35 cterm=bold
-hi! zq_bgreen3 ctermfg=40 cterm=bold
-hi! zq_bgreen4 ctermfg=82 cterm=bold
+hi! zq_bgreen2 ctermfg=35   cterm=bold
+hi! zq_bgreen3 ctermfg=40   cterm=bold
+hi! zq_bgreen4 ctermfg=82   cterm=bold
+" Light-green colors…
 hi! zq_lgreen ctermfg=lightgreen
 hi! zq_lgreen2 ctermfg=118
 hi! zq_lgreen3 ctermfg=154
+" Light-green colors + bold…
 hi! zq_lbgreen ctermfg=lightgreen cterm=bold
 hi! zq_lbgreen2 ctermfg=118 cterm=bold
 hi! zq_lbgreen3 ctermfg=154 cterm=bold
+" Rest of standard colors
 hi! zq_magenta ctermfg=magenta
+hi! zq_lmagenta ctermfg=lightmagenta
 hi! zq_cyan ctermfg=cyan
+hi! zq_lcyan ctermfg=lightcyan
 hi! zq_white ctermfg=white
 hi! zq_gray ctermfg=gray
+hi! zq_lgray ctermfg=lightgray
+" … + bold…
+hi! zq_bmagenta ctermfg=magenta       cterm=bold
+hi! zq_lbmagenta ctermfg=lightmagenta cterm=bold
+hi! zq_bcyan ctermfg=cyan             cterm=bold
+hi! zq_lbcyan ctermfg=lightcyan       cterm=bold
+hi! zq_bwhite ctermfg=white           cterm=bold
+hi! zq_bgray ctermfg=gray             cterm=bold
+hi! zq_lbgray ctermfg=lightgray       cterm=bold
+" bold…
+hi! zq_bold cterm=bold
+
+hi! zq_bluemsg ctermfg=123 ctermbg=25 cterm=bold
 
 " Initialize globals.
 " Retain previous messages ↔ allow reloading the plugin preserving the state.
