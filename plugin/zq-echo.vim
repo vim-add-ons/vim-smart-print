@@ -466,7 +466,7 @@ function! s:ZeroQuote_evalArgs(args,l,a)
             " Compensate for explicit variable-expansion requests or {:ex commands…}, etc.
             let Arg__ = s:ZeroQuote_ExpandVars(Arg__)
 
-            if type(Arg__) == v:t_string && !__already_evaluated[__idx]
+            if type(Arg__) == v:t_string && (!__already_evaluated[__idx] || Arg__ =~ '^function([^)]\+)$')
                 " A variable?
                 if Arg__ =~# '\v^\s*[svwatgbl]:[a-zA-Z_][a-zA-Z0-9._]*%(\[[^]]+\])*\s*$'
                     let Arg__ = eval(substitute(Arg__, 'a:\([a-zA-Z_-][a-zA-Z0-9_-]*\)','a:a.\1','g'))
