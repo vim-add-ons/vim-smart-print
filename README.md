@@ -29,7 +29,8 @@ features:
   status change — by prepending `p:{SECS}:…` to the message,
 - ability to embed:
     1. variable-expanding strings in the text, in a form: `{g:myvar…}`,
-    2. `ex`-command's output-capture replacing strings, in a form:
+    2. expression-expanding strings, in a form `{=expression…}`,
+    3. `ex`-command's output-capture replacing strings, in a form:
        `{:ex-command(s)…}`.
 
 ## examples
