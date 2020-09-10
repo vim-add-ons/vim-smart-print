@@ -506,19 +506,20 @@ endfunc
 " FUNCTION: s:ZeroQuote_ExpandVars {{{
 " It expands all {:command …'s} and {[sgb]:user_variable's}.
 func! s:ZeroQuote_ExpandVars(text_or_texts,l,a)
+    call extend(l:,a:l)
     if type(a:text_or_texts) == v:t_list
         " List input.
-        let texts=deepcopy(a:text_or_texts)
-        let idx = 0
-        for t in texts
-            let texts[idx] = s:ZeroQuote_ExpandVars(t,a:l,a:a)
-            let idx += 1
+        let __texts=deepcopy(a:text_or_texts)
+        let __idx = 0
+        for __t in __texts
+            let __texts[__idx] = s:ZeroQuote_ExpandVars(__t,a:l,a:a)
+            let __idx += 1
         endfor
-        let Res = texts
+        let Res__ = __texts
     elseif type(a:text_or_texts) == v:t_string
         " String input.
-        let Res = substitute(a:text_or_texts, '\([^a-zA-Z0-9_]\|\<\)a:\([a-zA-Z_-][a-zA-Z0-9_-]*\)','\1a:a.\2','g')
-        let Res = substitute(Res, '\v\{(([:=][^}]+|([svwtgba]\:|\&)[a-zA-Z_]
+        let Res__ = substitute(a:text_or_texts, '\([^a-zA-Z0-9_]\|\<\)a:\([a-zA-Z_-][a-zA-Z0-9_-]*\)','\1a:a.\2','g')
+        let Res__ = substitute(Res__, '\v\{(([:=][^}]+|([svwtglba]\:|\&)[a-zA-Z_]
     \[a-zA-Z0-9._]*%(\[[^]]+\])*))\}',
     \ '\=((submatch(1)[0] == ":") ?
         \ ((submatch(1)[1] != ":") ? execute(submatch(1))[1:] : execute(submatch(1))[1:0])
@@ -526,9 +527,9 @@ func! s:ZeroQuote_ExpandVars(text_or_texts,l,a)
                     \ eval(submatch(1)[1:])
                         \ : (exists(submatch(1)) ? eval(submatch(1)) : submatch(1)) ))', 'g')
     else
-        let Res = a:text_or_texts
+        let Res__ = a:text_or_texts
     endif
-    return Res
+    return Res__
 endfunc
 " }}}
 " FUNCTION: s:ZeroQuote_GetPrefixValue(pfx, msg) {{{
