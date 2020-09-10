@@ -119,10 +119,13 @@ hi! zq_lbcyan ctermfg=lightcyan       cterm=bold
 hi! zq_bwhite ctermfg=white           cterm=bold
 hi! zq_bgray ctermfg=gray             cterm=bold
 hi! zq_lbgray ctermfg=lightgray       cterm=bold
+hi! zq_red ctermfg=red
+hi! zq_bred ctermfg=red cterm=bold
 " bold…
 hi! zq_bold cterm=bold
 
 hi! zq_bluemsg ctermfg=123 ctermbg=25 cterm=bold
+hi! zq_goldmsg ctermfg=35 ctermbg=220 cterm=bold
 
 " Initialize globals.
 " Retain previous messages ↔ allow reloading the plugin preserving the state.
@@ -171,7 +174,8 @@ function! s:ZeroQuote_ZQEcho(hl, ...)
     endif
 
     " Finally: detect %…. infixes, select color, output the message bit by bit.
-    let c = ["Error", "red", "green2", "orange3", "blue2", "magenta", "cyan", "white", "gray", "bluemsg"]
+    "           0       1       2          3        4          5         6       7        8         9         10
+    let c = ["Error", "red", "green2", "orange2", "blue2", "magenta", "lcyan", "white", "gray", "bluemsg", "goldmsg"]
     let [pause,new_msg_pre,new_msg_post] = s:ZeroQuote_GetPrefixValue('p%[ause]', join(args) )
     let msg = new_msg_pre . new_msg_post
 
