@@ -559,13 +559,18 @@ endfunc
 function! ZQMessages(arg=v:none)
     if a:arg == "clear"
         let g:zq_messages = []
-        return
+        return 0
+    endif
+    if !empty( a:arg )
+        0ZQEcho %0Error%-: Invalid argument \(%3 a:arg%- ) given to %2:Message%-, allowed is only optional: %2clear%-
+        return 1
     endif
     let s:zq_MessagesCmd_state = 1
     for msg in g:zq_messages
         call s:ZeroQuote_ZQEcho(msg[0],msg[1:])
     endfor
     let s:zq_MessagesCmd_state = 0
+    return 0
 endfunc
 " }}}
 """""""""""""""""" THE END OF THE UTILITY FUNCTIONS }}}
