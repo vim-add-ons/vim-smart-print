@@ -7,7 +7,7 @@ arguments — it'll by itself:
 - and then expand constructing the final message.
 
 *"But :echom also 'expands' variables… by design…"* — you'll maybe think.
-That's true, `ZQEcho` works somewhat in a «*reversed*» way for increased
+That's true, `SmartPrint` works somewhat in a «*reversed*» way for increased
 convenience — it doesn't require to quote regular text (unlike `echom`) ←→ THIS
 IS THE CANDY — and from this point it takes actions to elevate variables and
 expressions back into their special meaning, so it's the command's main
@@ -16,7 +16,7 @@ fingers will feel freed!
 
 #### other features
 
-Besides the zero-quoting property, `ZQEcho` has some other, interesting
+Besides the zero-quoting property, `SmartPrint` has some other, interesting
 features:
 
 - ·**multi-color**· messages that overcome `:echom` limitation of only one
@@ -38,39 +38,39 @@ features:
 #### basic usage
 
 ```
-let g:zq_echo_log_level = 3 " Show only messages of log level <= 3
+let g:smart_echo_log_level = 3 " Show only messages of log level <= 3
 
-:ZQEcho Hello World! You can use any Unicode glyph without quoting: ≈ß•°×∞„”
-:2ZQEcho Prepend with a ·count· ↔ a message log-level AND also a distinct color
-:ZQEcho %1 Red %2 Green %3 Yellow %4 Blue %5 Magenta %6 Cyan %7 White %0 Error %- Reset
-:ZQEcho Above is the short-color format. The long one allows to specify any
+:SmartPrint Hello World! You can use any Unicode glyph without quoting: ≈ß•°×∞„”
+:2SmartPrint Prepend with a ·count· ↔ a message ˙log-level˙ AND also a different color
+:SPrint %1 Red %2 Green %3 Yellow %4 Blue %5 Magenta %6 Cyan %7 White %0 Error %- Reset
+:SPrint Above is the short-color format. The long one allows to specify any
       \ hl-group: %Identifier Hello %Constant world!
-:ZQEcho Provided are color-named hl-groups, like: %gold. %lblue. etc.
+:SP Provided are color-named hl-groups, like: %gold. %lblue. etc.
 ```
 
 #### variable/expression printing
 
 ```
-:ZQEcho To print a variable, simply include it, like: g:my_dict['my_field']
-:ZQEcho All data-types will be stringified → this works: g:my_dictionary
-      \ g:my_list v:argv etc.
-:ZQEcho Function-like expressions are auto-evaluated, e.g.: toupper('hello!')
-:ZQEcho Include complex expressions by wrapping them with parens, e.g.: (rand() % 5)
-:ZQEcho You can also print l:local_vars, a:argument_vars, and also — if you
+:SPrint To print a variable, simply include it, like: g:my_dict['my_field']
+:SPrint All data-types will be stringified → this works: g:my_dictionary
+  \ g:my_list v:argv etc.
+:SPrint Function-like expressions are auto-evaluated, e.g.: toupper('hello!')
+:SPrint Include complex expressions by wrapping them with parens, e.g.: (rand() % 5)
+:SPrint You can also print l:local_vars, a:argument_vars, and also — if you
   supply a s:-dict getter-function — s:script_vars. More info below.
 ```
 
 #### asynchroneous printing
 
 ```
-:ZQEcho! I'll be printed from a timer-·callback· after 10 ms (the default timeout)
-:200ZQEcho! Set timeout to 200 ms ↔ ·counts· > 25 are custom timeouts, not log-levels
-:200ZQEcho! lev:10 Specify the log level instead of the default 14
+:SPrint! I'll be printed from a timer-·callback· after 10 ms (the default timeout)
+:200SPrint! Set timeout to 200 ms ↔ ·counts· > 25 are custom timeouts, not log-levels
+:200SPrint! lev:10 Specify the log level instead of the default 14
 ```
 
 ### printing `s:`-vars
 
-To be able to pass script-variables to `ZQEcho` you'll need to provide a
+To be able to pass script-variables to `SmartPrint` you'll need to provide a
 getter-function for your script's `s:`-dict, like so:
 
 ```vim
@@ -79,15 +79,15 @@ function! s:MyPlugin_GetSDict()
 endfunct
     
 let Ref = function("s:MyPlugin_GetSDict")
-ZQSetSDictFunc Ref
+SmartSetSDictFunc Ref
 ```
 
-Also, the `s:`-variables will be available only, if `ZQEcho` will be called
+Also, the `s:`-variables will be available only, if `SmartPrint` will be called
 (directly or indirectly) from a script-local function, i.e.: e.g.:
 `s:myFunction()`. Printing the vars from `s:`-unprefixed functions will not
 work.
 
 ### Screenshot
 
-![screenshot](https://raw.githubusercontent.com/vim-add-ons/zq-echo/master/img/history.png)
+![screenshot](https://raw.githubusercontent.com/vim-add-ons/vim-smart-print/master/img/history.png)
 
